@@ -46,13 +46,69 @@ Built with:
 
 ---
 
-## Installation
+## Tech Stack
 
-### Development (web app)
+**Frontend**
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
 
-Clone and install:
+**Desktop**
+- Tauri
 
+**Backend (local)**
+- Python
+- FastAPI
+- FAISS (vector search)
+- Optional Groq LLM integration
+
+---
+
+## Project Structure
+
+SelfForge/
+├─ src/ # React frontend
+├─ backend/ # FastAPI backend (local)
+├─ src-tauri/ # Tauri desktop wrapper
+├─ public/
+├─ README.md
+└─ .gitignore
+
+
+## Running in Development
+
+### Frontend
 ```bash
-git clone https://github.com/qqueeeeee/SelfForge.git
-cd SelfForge
-pnpm install  # or npm/yarn
+npm install
+npm run dev
+```
+
+### Backend (optional)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload
+```
+
+### Desktop Build (Tauri)
+```bash
+npm run tauri dev    # dev mode
+npm run tauri build  # production build
+```
+
+#### Data & Backups
+
+All data is stored locally.
+
+You can export:
+
+- tasks
+- timeline history
+- timers
+- logs
+
+from Settings → Export Data.
