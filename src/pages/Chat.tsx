@@ -4,8 +4,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Send, Bot, User, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 
@@ -25,7 +23,6 @@ const suggestedPrompts = [
 ];
 
 export default function Chat() {
-  const { session } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -66,26 +63,33 @@ export default function Chat() {
     try {
       // Build conversation history for context
       const conversationHistory = messages
-        .filter(m => m.id !== "welcome")
+        .filter((m) => m.id !== "welcome")
         .slice(-10)
-        .map(m => ({
+        .map((m) => ({
           role: m.role,
-          content: m.content
+          content: m.content,
         }));
 
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: {
-          message: userMessage.content,
-          conversationHistory,
+      const res = await fetch("http://localhost:8000/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          question: userMessage.content,
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        throw new Error("Backend error");
+      }
+
+      const data = await res.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.message,
+        content: data.response,
         timestamp: new Date(),
       };
 
@@ -94,15 +98,17 @@ export default function Chat() {
       console.error("Chat error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to get AI response. Please try again.",
+        description:
+          error.message || "Failed to get AI response. Please try again.",
         variant: "destructive",
       });
-      
+
       // Add error message to chat
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm sorry, I encountered an error. Please try again in a moment.",
+        content:
+          "I'm sorry, I encountered an error. Please try again in a moment.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -131,7 +137,7 @@ export default function Chat() {
             key={message.id}
             className={cn(
               "flex gap-3",
-              message.role === "user" ? "justify-end" : "justify-start"
+              message.role === "user" ? "justify-end" : "justify-start",
             )}
           >
             {message.role === "assistant" && (
@@ -144,27 +150,49 @@ export default function Chat() {
                 "px-4 py-3 max-w-[85%] lg:max-w-[70%]",
                 message.role === "user"
                   ? "bg-primary text-primary-foreground"
-                  : "bg-card"
+                  : "bg-card",
               )}
             >
-              <div className={cn(
-                "prose prose-sm max-w-none",
-                message.role === "user" 
-                  ? "prose-invert" 
-                  : "dark:prose-invert"
-              )}>
+              <div
+                className={cn(
+                  "prose prose-sm max-w-none",
+                  message.role === "user"
+                    ? "prose-invert"
+                    : "dark:prose-invert",
+                )}
+              >
                 {message.role === "assistant" ? (
                   <ReactMarkdown
                     components={{
-                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                      ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
-                      ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
-                      li: ({ children }) => <li className="mb-1">{children}</li>,
-                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                      h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-                      code: ({ children }) => <code className="bg-muted px-1 rounded text-sm">{children}</code>,
+                      p: ({ children }) => (
+                        <p className="mb-2 last:mb-0">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mb-2 ml-4 list-disc">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="mb-2 ml-4 list-decimal">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="mb-1">{children}</li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold">{children}</strong>
+                      ),
+                      h1: ({ children }) => (
+                        <h1 className="text-lg font-bold mb-2">{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-base font-bold mb-2">{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-sm font-bold mb-1">{children}</h3>
+                      ),
+                      code: ({ children }) => (
+                        <code className="bg-muted px-1 rounded text-sm">
+                          {children}
+                        </code>
+                      ),
                     }}
                   >
                     {message.content}
@@ -206,7 +234,8 @@ export default function Chat() {
         <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
           <p className="text-sm text-muted-foreground">
-            Start logging your habits to get personalized AI insights. The more data you log, the better advice I can give!
+            Start logging your habits to get personalized AI insights. The more
+            data you log, the better advice I can give!
           </p>
         </div>
       )}
@@ -246,7 +275,11 @@ export default function Chat() {
             }
           }}
         />
-        <Button type="submit" disabled={loading || !input.trim()} className="h-auto">
+        <Button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="h-auto"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </form>

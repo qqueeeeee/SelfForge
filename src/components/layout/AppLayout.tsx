@@ -1,15 +1,17 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  PenLine, 
-  MessageSquare, 
-  Settings, 
+import {
+  Logs,
+  Clock,
+  LayoutDashboard,
+  CheckSquare,
+  MessageSquare,
+  Settings,
   LogOut,
   Sun,
   Moon,
   Menu,
-  X
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,14 +25,17 @@ interface AppLayoutProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: PenLine, label: "Log Entry", path: "/log" },
+  { icon: Clock, label: "Timer", path: "/timer" },
+  { icon: CheckSquare, label: "Tasks", path: "/tasks" },
+  { icon: Logs, label: "Timeline", path: "/timeline" },
   { icon: MessageSquare, label: "AI Insights", path: "/chat" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
-  const { signOut, user } = useAuth();
+  const user = { email: "local@user" };
+  const signOut = async () => {};
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -40,7 +45,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">SF</span>
+            <span className="text-primary-foreground font-bold text-sm">
+              SF
+            </span>
           </div>
           <span className="font-semibold text-foreground">SelfForge</span>
         </Link>
@@ -49,7 +56,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           size="icon"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </Button>
       </header>
 
@@ -66,7 +77,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                   location.pathname === item.path
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -78,8 +89,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               onClick={toggleTheme}
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
-              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-              <span className="font-medium">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+              <span className="font-medium">
+                {theme === "light" ? "Dark Mode" : "Light Mode"}
+              </span>
             </button>
             <button
               onClick={signOut}
@@ -96,7 +113,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border flex-col p-4">
         <Link to="/" className="flex items-center gap-3 px-2 mb-8">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">SF</span>
+            <span className="text-primary-foreground font-bold text-lg">
+              SF
+            </span>
           </div>
           <div>
             <h1 className="font-semibold text-foreground">SelfForge</h1>
@@ -113,7 +132,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 location.pathname === item.path
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -130,8 +149,14 @@ export function AppLayout({ children }: AppLayoutProps) {
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            <span className="font-medium">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+            <span className="font-medium">
+              {theme === "light" ? "Dark Mode" : "Light Mode"}
+            </span>
           </button>
           <button
             onClick={signOut}
@@ -145,9 +170,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content */}
       <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-4 lg:p-8 max-w-6xl mx-auto">
-          {children}
-        </div>
+        <div className="p-4 lg:p-8 max-w-6xl mx-auto">{children}</div>
       </main>
     </div>
   );

@@ -9,11 +9,26 @@ import { StreakCalendar } from "@/components/dashboard/StreakCalendar";
 import { HabitConsistency } from "@/components/dashboard/HabitConsistency";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
-import { format, subDays, isSameDay, differenceInDays } from "date-fns";
+import {
+  format,
+  subDays,
+  isSameDay,
+  differenceInDays,
+  parseISO,
+  isValid,
+} from "date-fns";
+
+function safeFormatDate(value: string | Date | null | undefined) {
+  if (!value) return null;
+
+  const date = typeof value === "string" ? parseISO(value) : value;
+
+  return isValid(date) ? format(date, "MMM d") : null;
+}
 
 export default function Dashboard() {
   const { logs, todayLog, loading } = useDailyLogs();
-  const currentDate = format(new Date(), "EEEE, MMMM d");
+  const currentDate = safeFormatDate(new Date(), "EEEE, MMMM d");
 
   if (loading) {
     return (
@@ -25,17 +40,20 @@ export default function Dashboard() {
 
   // Calculate stats from real data
   const today = new Date();
-  
+
   // Calculate current streak (consecutive days logged)
   let currentStreak = 0;
-  const sortedLogs = [...logs].sort((a, b) => 
-    new Date(b.log_date).getTime() - new Date(a.log_date).getTime()
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(b.log_date).getTime() - new Date(a.log_date).getTime(),
   );
-  
+
   for (let i = 0; i < sortedLogs.length; i++) {
     const logDate = new Date(sortedLogs[i].log_date);
     const expectedDate = subDays(today, i);
-    if (isSameDay(logDate, expectedDate) || (i === 0 && differenceInDays(today, logDate) <= 1)) {
+    if (
+      isSameDay(logDate, expectedDate) ||
+      (i === 0 && differenceInDays(today, logDate) <= 1)
+    ) {
       currentStreak++;
     } else {
       break;
@@ -44,41 +62,54 @@ export default function Dashboard() {
 
   // Mood data for chart
   const moodData = logs
-    .filter(log => log.mood !== null)
+    .filter((log) => log.mood !== null)
     .slice(0, 7)
     .reverse()
-    .map(log => ({
-      date: format(new Date(log.log_date), "MMM d"),
-      mood: log.mood || 0,
-    }));
+    .map((log) => {
+      const date = safeFormatDate(log.timestamp);
+      if (!date || log.mood == null) return null;
+
+      return {
+        date,
+        mood: log.mood,
+      };
+    })
+    .filter(Boolean);
 
   // Gym streak dates
   const gymDates = logs
-    .filter(log => log.gym_completed)
-    .map(log => new Date(log.log_date));
+    .filter((log) => log.gym_completed)
+    .map((log) => new Date(log.log_date));
 
   const gymStreak = gymDates.length;
 
   // Calculate averages
-  const avgMood = logs.length > 0
-    ? logs.reduce((sum, log) => sum + (log.mood || 0), 0) / logs.filter(l => l.mood).length
-    : 0;
+  const avgMood =
+    logs.length > 0
+      ? logs.reduce((sum, log) => sum + (log.mood || 0), 0) /
+        logs.filter((l) => l.mood).length
+      : 0;
 
-  const habitsCompleted = logs.length > 0
-    ? Math.round((logs.filter(l => l.gym_completed).length / logs.length) * 100)
-    : 0;
+  const habitsCompleted =
+    logs.length > 0
+      ? Math.round(
+          (logs.filter((l) => l.gym_completed).length / logs.length) * 100,
+        )
+      : 0;
 
   // Today's log for summary
-  const todaySummary = todayLog ? {
-    sleepHours: todayLog.sleep_hours || 0,
-    studyHours: todayLog.study_hours || 0,
-    gymCompleted: todayLog.gym_completed || false,
-    screenTimeHours: todayLog.screen_time_hours || 0,
-    mood: todayLog.mood || 0,
-  } : null;
+  const todaySummary = todayLog
+    ? {
+        sleepHours: todayLog.sleep_hours || 0,
+        studyHours: todayLog.study_hours || 0,
+        gymCompleted: todayLog.gym_completed || false,
+        screenTimeHours: todayLog.screen_time_hours || 0,
+        mood: todayLog.mood || 0,
+      }
+    : null;
 
   // All logged dates for streak calendar
-  const loggedDates = logs.map(log => new Date(log.log_date));
+  const loggedDates = logs.map((log) => new Date(log.log_date));
 
   // Weekly habit consistency data
   const weeklyData = calculateWeeklyConsistency(logs);
@@ -123,7 +154,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Current Streak"
-          value={`${currentStreak} ${currentStreak === 1 ? 'day' : 'days'}`}
+          value={`${currentStreak} ${currentStreak === 1 ? "day" : "days"}`}
           icon={<TrendingUp className="h-5 w-5" />}
           trend={currentStreak > 0 ? "up" : undefined}
           trendValue={currentStreak > 0 ? "Keep it up!" : undefined}
@@ -139,7 +170,13 @@ export default function Dashboard() {
           value={avgMood > 0 ? avgMood.toFixed(1) : "—"}
           icon={<Target className="h-5 w-5" />}
           trend={avgMood >= 7 ? "up" : avgMood < 5 ? "down" : undefined}
-          trendValue={avgMood >= 7 ? "Great!" : avgMood < 5 ? "Room to improve" : undefined}
+          trendValue={
+            avgMood >= 7
+              ? "Great!"
+              : avgMood < 5
+                ? "Room to improve"
+                : undefined
+          }
         />
         <StatCard
           title="Gym Days"
@@ -153,7 +190,9 @@ export default function Dashboard() {
         <TodaySummary log={todaySummary} />
       ) : (
         <div className="bg-card rounded-xl p-5 border border-border shadow-sm text-center">
-          <p className="text-muted-foreground mb-3">You haven't logged today yet</p>
+          <p className="text-muted-foreground mb-3">
+            You haven't logged today yet
+          </p>
           <Link to="/log">
             <Button variant="secondary" size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
@@ -185,11 +224,10 @@ export default function Dashboard() {
           <h3 className="text-sm font-medium text-muted-foreground mb-3">
             Latest Journal Entry
           </h3>
-          <p className="text-foreground leading-relaxed">
-            "{logs[0].notes}"
-          </p>
+          <p className="text-foreground leading-relaxed">"{logs[0].notes}"</p>
           <p className="text-xs text-muted-foreground mt-3">
-            {format(new Date(logs[0].log_date), "EEEE, MMMM d")} • {format(new Date(logs[0].updated_at), "h:mm a")}
+            {safeFormatDate(new Date(logs[0].log_date), "EEEE, MMMM d")} •{" "}
+            {safeFormatDate(new Date(logs[0].updated_at), "h:mm a")}
           </p>
         </div>
       )}
@@ -201,26 +239,31 @@ function calculateWeeklyConsistency(logs: any[]) {
   if (logs.length === 0) return [];
 
   // Group logs by week and calculate consistency
-  const weeks: { [key: string]: { gym: number; study: number; sleep: number; total: number } } = {};
-  
-  logs.forEach(log => {
+  const weeks: {
+    [key: string]: { gym: number; study: number; sleep: number; total: number };
+  } = {};
+
+  logs.forEach((log) => {
     const date = new Date(log.log_date);
-    const weekStart = format(subDays(date, date.getDay()), "MMM d");
-    
+    const weekStart = safeFormatDate(subDays(date, date.getDay()), "MMM d");
+
     if (!weeks[weekStart]) {
       weeks[weekStart] = { gym: 0, study: 0, sleep: 0, total: 0 };
     }
-    
+
     weeks[weekStart].total++;
     if (log.gym_completed) weeks[weekStart].gym++;
     if ((log.study_hours || 0) >= 2) weeks[weekStart].study++;
     if ((log.sleep_hours || 0) >= 7) weeks[weekStart].sleep++;
   });
 
-  return Object.entries(weeks).slice(0, 4).map(([week, data]) => ({
-    week,
-    gym: Math.round((data.gym / data.total) * 100),
-    study: Math.round((data.study / data.total) * 100),
-    sleep: Math.round((data.sleep / data.total) * 100),
-  })).reverse();
+  return Object.entries(weeks)
+    .slice(0, 4)
+    .map(([week, data]) => ({
+      week,
+      gym: Math.round((data.gym / data.total) * 100),
+      study: Math.round((data.study / data.total) * 100),
+      sleep: Math.round((data.sleep / data.total) * 100),
+    }))
+    .reverse();
 }

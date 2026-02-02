@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -10,25 +16,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGroqApiKey } from "@/hooks/useGroqApiKey";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserNotes } from "@/hooks/useUserNotes";
-import { 
-  Save, 
-  Download, 
-  Moon, 
-  Sun, 
-  Database, 
-  LogOut, 
-  Loader2, 
-  FileJson, 
-  Key, 
-  Eye, 
+import {
+  Save,
+  Download,
+  Moon,
+  Sun,
+  Database,
+  LogOut,
+  Loader2,
+  FileJson,
+  Key,
+  Eye,
   EyeOff,
   Trash2,
-  Check
+  Check,
 } from "lucide-react";
 
 /**
  * Settings Page
- * 
+ *
  * Future Backend Integration:
  * - Store Groq API key in encrypted user metadata via /api/user/settings
  * - Add account deletion endpoint at /api/user/delete
@@ -37,11 +43,13 @@ import {
 export default function Settings() {
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
-  const { user, signOut } = useAuth();
-  const { apiKey, setApiKey, clearApiKey, hasApiKey, maskedKey } = useGroqApiKey();
+  const user = { email: "local@user" };
+  const signOut = async () => {};
+  const { apiKey, setApiKey, clearApiKey, hasApiKey, maskedKey } =
+    useGroqApiKey();
   const { logs, loading: logsLoading } = useDailyLogs();
   const { notes, loading: notesLoading } = useUserNotes();
-  
+
   const [exporting, setExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [groqKeyInput, setGroqKeyInput] = useState("");
@@ -59,12 +67,12 @@ export default function Settings() {
     }
 
     setSavingKey(true);
-    
+
     // Simulate async operation for UX feedback
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const success = setApiKey(groqKeyInput.trim());
-    
+
     if (success) {
       toast({
         title: "API Key Saved",
@@ -78,7 +86,7 @@ export default function Settings() {
         variant: "destructive",
       });
     }
-    
+
     setSavingKey(false);
   };
 
@@ -113,52 +121,74 @@ export default function Settings() {
 
   const handleExportData = async () => {
     setExporting(true);
-    
+
     try {
+      const allData: Record<string, any> = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        // Only export SelfForge-related keys
+        if (
+          key.startsWith("timeline-") ||
+          key === "tasks" ||
+          key === "timers" ||
+          key === "groq-api-key"
+        ) {
+          try {
+            allData[key] = JSON.parse(localStorage.getItem(key)!);
+          } catch {
+            allData[key] = localStorage.getItem(key);
+          }
+        }
+      }
+
       const exportData = {
-        exportDate: new Date().toISOString(),
-        user: {
-          email: user?.email,
-          id: user?.id,
-        },
-        dailyLogs: logs,
-        notes: notes,
+        app: "SelfForge",
+        version: "1.0.0",
+        exportedAt: new Date().toISOString(),
+        data: allData,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
         type: "application/json",
       });
-      
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `selfforge-export-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
+      a.download = `selfforge-backup-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Export Complete",
-        description: "Your data has been downloaded as JSON.",
+        title: "Backup created",
+        description: "Full local backup downloaded",
       });
-    } catch (error) {
+    } catch {
       toast({
-        title: "Export Failed",
-        description: "There was an error exporting your data. Please try again.",
+        title: "Export failed",
         variant: "destructive",
       });
     } finally {
       setExporting(false);
     }
   };
-
   const handleExportCSV = async () => {
     setExporting(true);
-    
+
     try {
-      const headers = ["Date", "Sleep (hrs)", "Study (hrs)", "Gym", "Screen Time (hrs)", "Mood", "Notes"];
-      const rows = logs.map(log => [
+      const headers = [
+        "Date",
+        "Sleep (hrs)",
+        "Study (hrs)",
+        "Gym",
+        "Screen Time (hrs)",
+        "Mood",
+        "Notes",
+      ];
+      const rows = logs.map((log) => [
         log.log_date,
         log.sleep_hours || "",
         log.study_hours || "",
@@ -170,7 +200,7 @@ export default function Settings() {
 
       const csvContent = [
         headers.join(","),
-        ...rows.map(row => row.join(",")),
+        ...rows.map((row) => row.join(",")),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv" });
@@ -190,7 +220,8 @@ export default function Settings() {
     } catch (error) {
       toast({
         title: "Export Failed",
-        description: "There was an error exporting your data. Please try again.",
+        description:
+          "There was an error exporting your data. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -201,10 +232,12 @@ export default function Settings() {
   const isDataLoading = logsLoading || notesLoading;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
+        <p className="text-muted-foreground">
+          Manage your account and preferences
+        </p>
       </div>
 
       {/* Account */}
@@ -224,7 +257,11 @@ export default function Settings() {
           <div className="space-y-2">
             <Label>Member since</Label>
             <Input
-              value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}
+              value={
+                user?.created_at
+                  ? new Date(user.created_at).toLocaleDateString()
+                  : "—"
+              }
               disabled
               className="bg-muted"
             />
@@ -234,7 +271,9 @@ export default function Settings() {
               {isDataLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
               ) : (
-                <p className="text-2xl font-bold text-foreground">{logs.length}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {logs.length}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">Total Logs</p>
             </div>
@@ -242,7 +281,9 @@ export default function Settings() {
               {isDataLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
               ) : (
-                <p className="text-2xl font-bold text-foreground">{notes.length}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {notes.length}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">Notes</p>
             </div>
@@ -268,7 +309,7 @@ export default function Settings() {
               Optional: Add your Groq API key for custom AI model access.
               {/* Future: Replace with server-side key management */}
             </p>
-            
+
             {hasApiKey ? (
               <div className="flex items-center gap-2">
                 <div className="flex-1 p-3 bg-muted rounded-lg flex items-center justify-between">
@@ -285,7 +326,11 @@ export default function Settings() {
                     onClick={() => setShowGroqKey(!showGroqKey)}
                     className="h-8 w-8"
                   >
-                    {showGroqKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showGroqKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 <Button
@@ -330,7 +375,11 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === "light" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
             Appearance
           </CardTitle>
           <CardDescription>Customize how SelfForge looks</CardDescription>
@@ -355,13 +404,15 @@ export default function Settings() {
             <Download className="h-4 w-4" />
             Data Management
           </CardTitle>
-          <CardDescription>Export your data for backup or analysis</CardDescription>
+          <CardDescription>
+            Export your data for backup or analysis
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleExportData} 
+            <Button
+              variant="outline"
+              onClick={handleExportData}
               disabled={exporting || isDataLoading}
               className="gap-2 flex-1"
             >
@@ -370,11 +421,11 @@ export default function Settings() {
               ) : (
                 <FileJson className="h-4 w-4" />
               )}
-              Export All (JSON)
+              Backup Everything (JSON)
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleExportCSV} 
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
               disabled={exporting || isDataLoading}
               className="gap-2 flex-1"
             >
@@ -387,7 +438,9 @@ export default function Settings() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Download all your habits, logs, and notes. JSON includes everything, CSV is spreadsheet-ready.
+            Backup creates a full local backup. Keep it safe — this app does not
+            sync data yet. Export downloadsall your habits, logs, and notes.
+            JSON includes everything, CSV is spreadsheet-ready.
           </p>
         </CardContent>
       </Card>
@@ -401,9 +454,9 @@ export default function Settings() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Button 
-            variant="destructive" 
-            onClick={handleSignOut} 
+          <Button
+            variant="destructive"
+            onClick={handleSignOut}
             disabled={signingOut}
             className="gap-2"
           >

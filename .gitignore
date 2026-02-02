@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+*.pyc
+*.pyo
+*.pyd
+*.exe
+*.msi
+*.dmg
+*.app
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +31,7 @@ dist-ssr
 *.sw?
 .env
 binaries/
+src-tauri/target/
+
+backend/__pycache__
+backend/venv/
