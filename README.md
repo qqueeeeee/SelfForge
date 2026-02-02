@@ -1,78 +1,58 @@
-# SelfForge – Personal AI Habit Tracker
+# SelfForge
 
-Personal productivity web app with Supabase auth and dashboard. Planned: habit logging, Groq LLM insights, RAG on notes/logs.
+**SelfForge** is a local-first productivity desktop app for tracking habits, tasks, timers, and personal insights supported by AI.  
+It combines timeline logging, customizable trackers, and optional AI guidance from your own notes and habit history.
 
-## Setup
+---
 
-1. Clone repo
+## Overview
 
-2. `npm install`
+SelfForge helps you:
 
-3. Create `.env.local` with:
+✅ Track habits and routines  
+✅ Log tasks with optional reminders  
+✅ Record daily deep-work timers  
+✅ Visualize your timeline  
+✅ Get personalized insights powered by RAG + LLMs  
+✅ Backup your data locally
 
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-VITE_SUPABASE_PROJECT_ID=your_project_id
-# Optional: Add Groq API key for AI features (can also be set in Settings)
-# VITE_GROQ_API_KEY=your_groq_api_key
-```
+Built with:
+- **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui  
+- **Backend:** Python FastAPI (local, optional)  
+- **Desktop:** Tauri (cross-platform native builds)  
+- **AI:** Groq LLM & FAISS for RAG indexing
 
-4. Run `npm run dev`
+---
 
 ## Features
 
-- **Authentication**: Email/password auth with Supabase
-- **Dashboard**: View habit statistics, mood trends, and streak calendar
-- **Daily Logging**: Track sleep, study hours, gym, screen time, mood, and custom habits
-- **AI Chat**: Get personalized insights based on your habit data (requires Groq API key)
-- **Settings**: Dark/light mode, data export, API key management
+### Core
+- Daily habit tracker (sleep, study, screen time, mood, etc.)
+- Flexible custom habits
+- Deep-work timer with history → timeline sync
+- Task list with reminders and timeline logging
+- Full timeline view of your day
+- Data export (JSON/CSV)
 
-## Tech Stack
+### AI Insights
+- Ask questions about your logs & notes
+- RAG search on Obsidian or local notes
+- Personalized coaching responses
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **Backend**: Supabase (Auth, Database, Edge Functions)
-- **Data Fetching**: TanStack React Query
-- **Routing**: React Router v6
+### Desktop Focus
+- Local data only — no cloud unless you want
+- Backup & export your data easily
+- Crash safe with error boundary and robust storage
 
-## Project Structure
+---
 
-```
-src/
-├── components/       # Reusable UI components
-│   ├── dashboard/   # Dashboard-specific components
-│   ├── layout/      # Layout components (AppLayout, etc.)
-│   └── ui/          # shadcn/ui components
-├── contexts/        # React contexts (Auth, Theme)
-├── hooks/           # Custom hooks (useDailyLogs, useUserNotes, etc.)
-├── integrations/    # External service integrations (Supabase)
-├── lib/             # Utility functions
-├── pages/           # Route page components
-└── main.tsx         # App entry point
-```
+## Installation
 
-## Backend Integration Points
+### Development (web app)
 
-Key files with comments for custom backend integration:
+Clone and install:
 
-- `src/hooks/useDailyLogs.ts` - Replace Supabase calls with custom API
-- `src/hooks/useUserNotes.ts` - Replace Supabase calls with custom API
-- `src/pages/Auth.tsx` - Replace Supabase auth with custom endpoints
-- `src/contexts/AuthContext.tsx` - Custom auth state management
-- `src/components/ErrorBoundary.tsx` - Error logging integration
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `VITE_SUPABASE_URL` | Supabase project URL | Yes |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key | Yes |
-| `VITE_SUPABASE_PROJECT_ID` | Supabase project ID | Yes |
-
-## Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+```bash
+git clone https://github.com/qqueeeeee/SelfForge.git
+cd SelfForge
+pnpm install  # or npm/yarn
