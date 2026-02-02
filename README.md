@@ -68,6 +68,7 @@ Built with:
 
 ## Project Structure
 
+```text
 SelfForge/
 ├─ src/ # React frontend
 ├─ backend/ # FastAPI backend (local)
@@ -75,6 +76,7 @@ SelfForge/
 ├─ public/
 ├─ README.md
 └─ .gitignore
+```
 
 
 ## Running in Development
@@ -100,7 +102,7 @@ npm run tauri dev    # dev mode
 npm run tauri build  # production build
 ```
 
-#### Data & Backups
+### Data & Backups
 
 All data is stored locally.
 
