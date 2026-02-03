@@ -1,5 +1,7 @@
+import atexit
 import glob
 import os
+import sys
 from datetime import datetime, timedelta
 
 from db import HabitLog, SessionLocal
@@ -20,6 +22,23 @@ from sqlalchemy.orm import Session
 # ------------------ Setup ------------------
 load_dotenv()
 app = FastAPI()
+
+LOCK_FILE = os.path.join(os.path.dirname(__file__), "backend.lock")
+
+if os.path.exists(LOCK_FILE):
+    print("Backend already running")
+    sys.exit(0)
+
+with open(LOCK_FILE, "w") as f:
+    f.write(str(os.getpid()))
+
+
+def cleanup():
+    if os.path.exists(LOCK_FILE):
+        os.remove(LOCK_FILE)
+
+
+atexit.register(cleanup)
 
 app.add_middleware(
     CORSMiddleware,
