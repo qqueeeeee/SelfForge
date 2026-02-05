@@ -1,10 +1,7 @@
-import atexit
 import glob
 import os
-import sys
 from datetime import datetime, timedelta
 
-from db import HabitLog, SessionLocal
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,37 +16,33 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from db import HabitLog, SessionLocal
+
+
 # ------------------ Setup ------------------
+
 load_dotenv()
+
 app = FastAPI()
 
-LOCK_FILE = os.path.join(os.path.dirname(__file__), "backend.lock")
 
-if os.path.exists(LOCK_FILE):
-    print("Backend already running")
-    sys.exit(0)
+# ------------------ CORS ------------------
 
-with open(LOCK_FILE, "w") as f:
-    f.write(str(os.getpid()))
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "*")
 
-
-def cleanup():
-    if os.path.exists(LOCK_FILE):
-        os.remove(LOCK_FILE)
-
-
-atexit.register(cleanup)
+if ALLOWED_ORIGINS == "*":
+    origins = ["*"]
+else:
+    origins = ALLOWED_ORIGINS.split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-    ],
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ------------------ Schemas ------------------
 
@@ -60,26 +53,39 @@ class AskRequest(BaseModel):
 
 class LogCreate(BaseModel):
     habit: str
-    value: dict | str | int | float | bool
+    value: str | int | float | bool | dict
     timestamp: datetime | None = None
 
 
 # ------------------ Vector Store ------------------
 
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
-if os.path.exists("faiss_index"):
-    vector_store = FAISS.load_local(
-        "faiss_index",
-        embeddings,
-        allow_dangerous_deserialization=True,
-    )
-else:
-    notes_dir = os.getenv("NOTES_DIR")
+NOTES_DIR = os.getenv("NOTES_DIR", "notes")
+FAISS_DIR = "faiss_index"
+
+
+def load_vector_store():
+    if os.path.exists(FAISS_DIR):
+        return FAISS.load_local(
+            FAISS_DIR,
+            embeddings,
+            allow_dangerous_deserialization=True,
+        )
+
     documents = []
 
-    for path in glob.glob(f"{notes_dir}/**/*.md", recursive=True):
-        documents.extend(TextLoader(path, encoding="utf-8").load())
+    if os.path.exists(NOTES_DIR):
+        for path in glob.glob(f"{NOTES_DIR}/**/*.md", recursive=True):
+            documents.extend(
+                TextLoader(path, encoding="utf-8").load()
+            )
+
+    if not documents:
+        print("⚠️ No notes found, creating empty index")
+        return FAISS.from_texts([""], embeddings)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -87,10 +93,16 @@ else:
     )
 
     splits = splitter.split_documents(documents)
-    vector_store = FAISS.from_documents(splits, embeddings)
-    vector_store.save_local("faiss_index")
 
+    store = FAISS.from_documents(splits, embeddings)
+    store.save_local(FAISS_DIR)
+
+    return store
+
+
+vector_store = load_vector_store()
 retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+
 
 # ------------------ LLM ------------------
 
@@ -114,19 +126,25 @@ User question:
 
 Instructions:
 - Base insights on the habit data
-- Identify patterns and inconsistencies
+- Identify patterns
 - Be honest and actionable
 """
 )
 
 document_chain = create_stuff_documents_chain(llm, prompt)
-rag_chain = create_retrieval_chain(retriever, document_chain)
+
+rag_chain = create_retrieval_chain(
+    retriever,
+    document_chain,
+)
+
 
 # ------------------ Helpers ------------------
 
 
 def get_recent_logs(db: Session, days: int = 30):
     since = datetime.utcnow() - timedelta(days=days)
+
     return (
         db.query(HabitLog)
         .filter(HabitLog.timestamp >= since)
@@ -138,11 +156,18 @@ def get_recent_logs(db: Session, days: int = 30):
 # ------------------ Routes ------------------
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/logs")
 def get_logs(days: int = 30):
     db = SessionLocal()
+
     try:
         logs = get_recent_logs(db, days)
+
         return [
             {
                 "id": l.id,
@@ -152,6 +177,7 @@ def get_logs(days: int = 30):
             }
             for l in logs
         ]
+
     finally:
         db.close()
 
@@ -159,16 +185,20 @@ def get_logs(days: int = 30):
 @app.post("/logs")
 def create_log(log: LogCreate):
     db = SessionLocal()
+
     try:
         entry = HabitLog(
             habit=log.habit,
             value=log.value,
             timestamp=log.timestamp or datetime.utcnow(),
         )
+
         db.add(entry)
         db.commit()
         db.refresh(entry)
+
         return {"id": entry.id}
+
     finally:
         db.close()
 
@@ -176,10 +206,15 @@ def create_log(log: LogCreate):
 @app.post("/ask")
 def ask(req: AskRequest):
     db = SessionLocal()
+
     try:
         logs = get_recent_logs(db)
+
         logs_text = (
-            "\n".join(f"- {l.timestamp.date()}: {l.habit} = {l.value}" for l in logs)
+            "\n".join(
+                f"- {l.timestamp.date()}: {l.habit} = {l.value}"
+                for l in logs
+            )
             or "No logs available."
         )
 
@@ -191,10 +226,7 @@ def ask(req: AskRequest):
         )
 
         return {"response": result["answer"]}
+
     finally:
         db.close()
 
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}

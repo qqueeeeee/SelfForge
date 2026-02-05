@@ -4,6 +4,7 @@ import {
   Logs,
   Clock,
   LayoutDashboard,
+	Calendar,
   CheckSquare,
   MessageSquare,
   Settings,
@@ -25,6 +26,7 @@ interface AppLayoutProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Calendar, label: "Calendar", path: "/calendar" },
   { icon: Clock, label: "Timer", path: "/timer" },
   { icon: CheckSquare, label: "Tasks", path: "/tasks" },
   { icon: Logs, label: "Timeline", path: "/timeline" },
