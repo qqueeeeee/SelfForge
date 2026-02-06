@@ -1,16 +1,16 @@
 // Main Calendar component
-export { default as Calendar } from './Calendar';
+export { default as Calendar } from "./Calendar";
 
 // Calendar views
-export { MonthView, MonthViewCompact } from './MonthView';
-export { WeekView, WeekViewCompact } from './WeekView';
-export { DayView, DayViewSimple } from './DayView';
+export { MonthView, MonthViewCompact } from "./MonthView";
+export { WeekView, WeekViewCompact } from "./WeekView";
+export { DayView, DayViewSimple } from "./DayView";
 
 // Calendar components
-export { CalendarHeader, CalendarHeaderCompact } from './CalendarHeader';
-export { EventCard, EventCardMini } from './EventCard';
-export { EventModal } from './EventModal';
-
+export { CalendarHeader, CalendarHeaderCompact } from "./CalendarHeader";
+export { EventCard, EventCardMini } from "./EventCard";
+export { EventModal } from "./EventModal";
+export { ItemModal } from "./ItemModal";
 // Types
 export type {
   CalendarEvent,
@@ -23,7 +23,7 @@ export type {
   NavigationProps,
   EventStorage,
   EventCategoryConfig,
-} from './types';
+} from "./types";
 
 // Utilities re-exported for convenience
 export {
@@ -58,4 +58,4 @@ export {
   clearEventsStorage,
   exportEvents,
   importEvents,
-} from '@/lib/calendar-utils';
+} from "@/lib/calendar-utils";

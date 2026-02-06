@@ -19,59 +19,56 @@ interface StreakData {
   description: string;
 }
 
-export function ProductivityStreaks({ events, className }: ProductivityStreaksProps) {
+export function ProductivityStreaks({
+  events,
+  className,
+}: ProductivityStreaksProps) {
+  const safeEvents = Array.isArray(events) ? events : [];
   // Calculate different types of streaks
   const calculateStreaks = (): StreakData[] => {
     const today = new Date();
     const last30Days = Array.from({ length: 30 }, (_, i) =>
-      startOfDay(subDays(today, i))
+      startOfDay(subDays(today, i)),
     ).reverse();
 
     // Deep Work streak - consecutive days with deep work sessions
-    const deepWorkStreak = calculateConsecutiveStreak(
-      last30Days,
-      (date) =>
-        events.some(
-          (event) =>
-            isSameDay(event.startDateTime, date) && event.category === "deep-work"
-        )
+    const deepWorkStreak = calculateConsecutiveStreak(last30Days, (date) =>
+      safeEvents.some(
+        (event) =>
+          isSameDay(event.startDateTime, date) &&
+          event.category === "deep-work",
+      ),
     );
 
     // Daily Planning streak - consecutive days with any events
-    const planningStreak = calculateConsecutiveStreak(
-      last30Days,
-      (date) =>
-        events.some((event) => isSameDay(event.startDateTime, date))
+    const planningStreak = calculateConsecutiveStreak(last30Days, (date) =>
+      safeEvents.some((event) => isSameDay(event.startDateTime, date)),
     );
 
     // Focus streak - consecutive days with 3+ hours of focused work
-    const focusStreak = calculateConsecutiveStreak(
-      last30Days,
-      (date) => {
-        const dayEvents = events.filter(
-          (event) =>
-            isSameDay(event.startDateTime, date) &&
-            (event.category === "deep-work" || event.category === "task")
-        );
-        const totalHours = dayEvents.reduce((sum, event) => {
-          const duration = (event.endDateTime.getTime() - event.startDateTime.getTime()) / (1000 * 60 * 60);
-          return sum + duration;
-        }, 0);
-        return totalHours >= 3;
-      }
-    );
+    const focusStreak = calculateConsecutiveStreak(last30Days, (date) => {
+      const dayEvents = safeEvents.filter(
+        (event) =>
+          isSameDay(event.startDateTime, date) &&
+          (event.category === "deep-work" || event.category === "task"),
+      );
+      const totalHours = dayEvents.reduce((sum, event) => {
+        const duration =
+          (event.endDateTime.getTime() - event.startDateTime.getTime()) /
+          (1000 * 60 * 60);
+        return sum + duration;
+      }, 0);
+      return totalHours >= 3;
+    });
 
     // Balanced streak - consecutive days with events in multiple categories
-    const balancedStreak = calculateConsecutiveStreak(
-      last30Days,
-      (date) => {
-        const dayEvents = events.filter((event) =>
-          isSameDay(event.startDateTime, date)
-        );
-        const categories = new Set(dayEvents.map((event) => event.category));
-        return categories.size >= 2;
-      }
-    );
+    const balancedStreak = calculateConsecutiveStreak(last30Days, (date) => {
+      const dayEvents = safeEvents.filter((event) =>
+        isSameDay(event.startDateTime, date),
+      );
+      const categories = new Set(dayEvents.map((event) => event.category));
+      return categories.size >= 2;
+    });
 
     return [
       {
@@ -115,7 +112,7 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
 
   const calculateConsecutiveStreak = (
     dates: Date[],
-    predicate: (date: Date) => boolean
+    predicate: (date: Date) => boolean,
   ): { current: number; longest: number } => {
     let current = 0;
     let longest = 0;
@@ -140,10 +137,18 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
   };
 
   const streakData = calculateStreaks();
-  const totalCurrentStreak = streakData.reduce((sum, streak) => sum + streak.current, 0);
+  const totalCurrentStreak = streakData.reduce(
+    (sum, streak) => sum + streak.current,
+    0,
+  );
 
   return (
-    <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm", className)}>
+    <div
+      className={cn(
+        "bg-card rounded-xl p-6 border border-border shadow-sm",
+        className,
+      )}
+    >
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-1">
           Productivity Streaks
@@ -186,7 +191,7 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
             className={cn(
               "p-4 rounded-lg border transition-all hover:scale-105",
               streak.bgColor,
-              streak.current > 0 ? "border-current/20" : "border-border"
+              streak.current > 0 ? "border-current/20" : "border-border",
             )}
           >
             <div className="flex items-start justify-between mb-3">
@@ -210,17 +215,13 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
                 <div className={cn("text-lg font-bold", streak.color)}>
                   {streak.current}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Current
-                </div>
+                <div className="text-xs text-muted-foreground">Current</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-muted-foreground">
                   {streak.longest}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Record
-                </div>
+                <div className="text-xs text-muted-foreground">Record</div>
               </div>
             </div>
 
@@ -231,23 +232,25 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
                 <span>
                   {streak.longest > 0
                     ? `${Math.min(Math.round((streak.current / streak.longest) * 100), 100)}%`
-                    : "New!"
-                  }
+                    : "New!"}
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-1.5">
                 <div
                   className={cn(
                     "h-1.5 rounded-full transition-all",
-                    streak.color.includes('purple') && "bg-purple-500",
-                    streak.color.includes('blue') && "bg-blue-500",
-                    streak.color.includes('green') && "bg-green-500",
-                    streak.color.includes('orange') && "bg-orange-500"
+                    streak.color.includes("purple") && "bg-purple-500",
+                    streak.color.includes("blue") && "bg-blue-500",
+                    streak.color.includes("green") && "bg-green-500",
+                    streak.color.includes("orange") && "bg-orange-500",
                   )}
                   style={{
-                    width: streak.longest > 0
-                      ? `${Math.min((streak.current / streak.longest) * 100, 100)}%`
-                      : streak.current > 0 ? "100%" : "0%"
+                    width:
+                      streak.longest > 0
+                        ? `${Math.min((streak.current / streak.longest) * 100, 100)}%`
+                        : streak.current > 0
+                          ? "100%"
+                          : "0%",
                   }}
                 />
               </div>
@@ -261,7 +264,8 @@ export function ProductivityStreaks({ events, className }: ProductivityStreaksPr
         <div className="text-center">
           {totalCurrentStreak > 0 ? (
             <p className="text-sm text-muted-foreground">
-              🎉 You're on fire! Keep up the great work building these productive habits.
+              🎉 You're on fire! Keep up the great work building these
+              productive habits.
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">

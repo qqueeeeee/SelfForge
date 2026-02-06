@@ -280,7 +280,7 @@ export function DayViewSimple({
             {/* Timed events */}
             {timedItems.length > 0 && (
               <div>
-                {dayEvents.filter((event) => event.isAllDay).length > 0 && (
+                {allDayItems.length > 0 && (
                   <h3 className="text-sm font-medium text-muted-foreground mb-2 mt-4">
                     Scheduled
                   </h3>

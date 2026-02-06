@@ -26,10 +26,10 @@ export function WeeklyReport({ events, className }: WeeklyReportProps) {
   const currentWeek = new Date();
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
-
+  const safeEvents = Array.isArray(events) ? events : [];
   const calculateWeeklyStats = (): WeeklyStats => {
     // Filter events for current week
-    const weekEvents = events.filter((event) =>
+    const weekEvents = safeEvents.filter((event) =>
       isSameWeek(event.startDateTime, currentWeek, { weekStartsOn: 1 }),
     );
 

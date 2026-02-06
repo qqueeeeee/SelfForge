@@ -1,7 +1,14 @@
 import React from "react";
 import { CalendarEvent } from "@/components/calendar/types";
 import { cn } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { Brain, Users, Clock, TrendingUp } from "lucide-react";
 import { format, subDays, startOfDay, isSameDay } from "date-fns";
 
@@ -20,33 +27,38 @@ interface DayMetrics {
 }
 
 export function FocusMetrics({ events, className }: FocusMetricsProps) {
+  const safeEvents = Array.isArray(events) ? events : [];
   // Calculate focus vs meeting time for the last 7 days
   const calculateFocusMetrics = (): DayMetrics[] => {
     const today = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) =>
-      startOfDay(subDays(today, 6 - i))
+      startOfDay(subDays(today, 6 - i)),
     );
 
-    return last7Days.map(date => {
-      const dayEvents = events.filter(event =>
-        isSameDay(event.startDateTime, date)
+    return last7Days.map((date) => {
+      const dayEvents = safeEvents.filter((event) =>
+        isSameDay(event.startDateTime, date),
       );
 
       let focusTime = 0;
       let meetingTime = 0;
       let personalTime = 0;
 
-      dayEvents.forEach(event => {
-        const duration = (event.endDateTime.getTime() - event.startDateTime.getTime()) / (1000 * 60 * 60);
+      dayEvents.forEach((event) => {
+        const duration =
+          (event.endDateTime.getTime() - event.startDateTime.getTime()) /
+          (1000 * 60 * 60);
 
         if (event.category === "deep-work") {
           focusTime += duration;
         } else if (event.category === "task") {
           // Assume tasks with multiple attendees or certain keywords are meetings
-          if (event.title.toLowerCase().includes("meeting") ||
-              event.title.toLowerCase().includes("call") ||
-              event.title.toLowerCase().includes("standup") ||
-              event.title.toLowerCase().includes("sync")) {
+          if (
+            event.title.toLowerCase().includes("meeting") ||
+            event.title.toLowerCase().includes("call") ||
+            event.title.toLowerCase().includes("standup") ||
+            event.title.toLowerCase().includes("sync")
+          ) {
             meetingTime += duration;
           } else {
             focusTime += duration;
@@ -73,12 +85,20 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
 
   // Calculate totals and averages
   const totalFocusTime = metrics.reduce((sum, day) => sum + day.focusTime, 0);
-  const totalMeetingTime = metrics.reduce((sum, day) => sum + day.meetingTime, 0);
-  const totalPersonalTime = metrics.reduce((sum, day) => sum + day.personalTime, 0);
+  const totalMeetingTime = metrics.reduce(
+    (sum, day) => sum + day.meetingTime,
+    0,
+  );
+  const totalPersonalTime = metrics.reduce(
+    (sum, day) => sum + day.personalTime,
+    0,
+  );
   const totalTime = totalFocusTime + totalMeetingTime + totalPersonalTime;
 
-  const focusRatio = totalTime > 0 ? Math.round((totalFocusTime / totalTime) * 100) : 0;
-  const meetingRatio = totalTime > 0 ? Math.round((totalMeetingTime / totalTime) * 100) : 0;
+  const focusRatio =
+    totalTime > 0 ? Math.round((totalFocusTime / totalTime) * 100) : 0;
+  const meetingRatio =
+    totalTime > 0 ? Math.round((totalMeetingTime / totalTime) * 100) : 0;
 
   const avgFocusPerDay = totalFocusTime / 7;
   const avgMeetingPerDay = totalMeetingTime / 7;
@@ -119,30 +139,34 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
     return null;
   };
 
-  const getProductivityScore = (): { score: number; message: string; color: string } => {
+  const getProductivityScore = (): {
+    score: number;
+    message: string;
+    color: string;
+  } => {
     if (focusRatio >= 60) {
       return {
         score: focusRatio,
         message: "Excellent focus balance! 🎯",
-        color: "text-green-600"
+        color: "text-green-600",
       };
     } else if (focusRatio >= 40) {
       return {
         score: focusRatio,
         message: "Good focus time 👍",
-        color: "text-blue-600"
+        color: "text-blue-600",
       };
     } else if (focusRatio >= 20) {
       return {
         score: focusRatio,
         message: "Room for improvement 📈",
-        color: "text-yellow-600"
+        color: "text-yellow-600",
       };
     } else {
       return {
         score: focusRatio,
         message: "More focus time needed ⚡",
-        color: "text-red-600"
+        color: "text-red-600",
       };
     }
   };
@@ -151,7 +175,12 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
 
   if (totalTime === 0) {
     return (
-      <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm", className)}>
+      <div
+        className={cn(
+          "bg-card rounded-xl p-6 border border-border shadow-sm",
+          className,
+        )}
+      >
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-foreground mb-1">
             Focus Metrics
@@ -163,7 +192,9 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
 
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="text-muted-foreground mb-2">No time tracked this week</div>
+            <div className="text-muted-foreground mb-2">
+              No time tracked this week
+            </div>
             <p className="text-sm text-muted-foreground">
               Create calendar events to analyze your focus patterns
             </p>
@@ -174,7 +205,12 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
   }
 
   return (
-    <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm", className)}>
+    <div
+      className={cn(
+        "bg-card rounded-xl p-6 border border-border shadow-sm",
+        className,
+      )}
+    >
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-1">
           Focus Metrics
@@ -220,9 +256,7 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
           <div className="flex justify-center mb-2">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
-          <div className="text-lg font-bold text-primary">
-            {focusRatio}%
-          </div>
+          <div className="text-lg font-bold text-primary">{focusRatio}%</div>
           <div className="text-xs text-muted-foreground">Focus Ratio</div>
         </div>
       </div>
@@ -231,7 +265,10 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
       <div className="mb-6">
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={metrics} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart
+              data={metrics}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <XAxis
                 dataKey="displayDate"
                 tick={{ fontSize: 12 }}
@@ -242,7 +279,7 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
                 tick={{ fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
-                label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
+                label={{ value: "Hours", angle: -90, position: "insideLeft" }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
@@ -297,7 +334,8 @@ export function FocusMetrics({ events, className }: FocusMetricsProps) {
 
         {focusRatio < 40 && (
           <div className="mt-2 text-xs text-muted-foreground">
-            💡 Try blocking more time for deep work and reducing meeting overhead
+            💡 Try blocking more time for deep work and reducing meeting
+            overhead
           </div>
         )}
       </div>

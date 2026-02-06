@@ -30,6 +30,7 @@ export function TimeDistribution({
   className,
   timeRange = "week",
 }: TimeDistributionProps) {
+  const safeEvents = Array.isArray(events) ? events : [];
   // Calculate time distribution by category
   const calculateTimeDistribution = (): CategoryData[] => {
     const categoryTotals: { [key: string]: number } = {};
@@ -44,7 +45,7 @@ export function TimeDistribution({
       cutoffDate.setDate(now.getDate() - 30);
     }
 
-    const filteredEvents = events.filter(
+    const filteredEvents = safeEvents.filter(
       (event) => event.startDateTime >= cutoffDate,
     );
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CalendarTask, CalendarEvent, ItemCategory } from "./types";
 import { getCategoryConfig } from "@/lib/custom-categories";
 import { loadCustomCategories } from "@/lib/custom-categories";
-import { formatDate } from "@/lib/calendar-utils";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -83,7 +83,15 @@ export function ItemModal({
   itemType = "event",
 }: ItemModalProps) {
   const { toast } = useToast();
-  const [categories, setCategories] = useState<Array<{ id: string; label: string; color: string; bgColor: string; borderColor: string }>>([]);
+  const [categories, setCategories] = useState<
+    Array<{
+      id: string;
+      label: string;
+      color: string;
+      bgColor: string;
+      borderColor: string;
+    }>
+  >([]);
   const [formData, setFormData] = useState<ItemFormData>({
     title: "",
     description: "",
@@ -110,13 +118,15 @@ export function ItemModal({
   useEffect(() => {
     if (isOpen) {
       const loadedCategories = loadCustomCategories();
-      setCategories(loadedCategories.map(cat => ({
-        id: cat.id,
-        label: cat.label,
-        color: cat.color,
-        bgColor: cat.bgColor,
-        borderColor: cat.borderColor,
-      })));
+      setCategories(
+        loadedCategories.map((cat) => ({
+          id: cat.id,
+          label: cat.label,
+          color: cat.color,
+          bgColor: cat.bgColor,
+          borderColor: cat.borderColor,
+        })),
+      );
     }
   }, [isOpen]);
 
@@ -125,8 +135,8 @@ export function ItemModal({
     if (isOpen) {
       if (item) {
         // Editing existing item
-        const startDate = item.startDateTime.toISOString().split("T")[0];
-        const endDate = item.endDateTime.toISOString().split("T")[0];
+        const startDate = format(item.startDateTime, "yyyy-MM-dd");
+        const endDate = format(item.endDateTime, "yyyy-MM-dd");
         const startTime = item.isAllDay
           ? "09:00"
           : item.startDateTime.toTimeString().slice(0, 5);
@@ -144,11 +154,20 @@ export function ItemModal({
           category: item.category,
           isAllDay: item.isAllDay || false,
           type: item.type,
-          priority: item.type === "task" ? (item as CalendarTask).priority : "medium",
-          estimatedDuration: item.type === "task" ? (item as CalendarTask).estimatedDuration : 60,
-          completed: item.type === "task" ? (item as CalendarTask).completed : false,
-          location: item.type === "event" ? (item as CalendarEvent).location || "" : "",
-          attendees: item.type === "event" ? (item as CalendarEvent).attendees || [] : [],
+          priority:
+            item.type === "task" ? (item as CalendarTask).priority : "medium",
+          estimatedDuration:
+            item.type === "task"
+              ? (item as CalendarTask).estimatedDuration
+              : 60,
+          completed:
+            item.type === "task" ? (item as CalendarTask).completed : false,
+          location:
+            item.type === "event" ? (item as CalendarEvent).location || "" : "",
+          attendees:
+            item.type === "event"
+              ? (item as CalendarEvent).attendees || []
+              : [],
         });
       } else {
         // Creating new item
@@ -156,7 +175,7 @@ export function ItemModal({
         const defaultStartHour = initialHour || 9;
         const defaultEndHour = defaultStartHour + 1;
 
-        const startDate = defaultDate.toISOString().split("T")[0];
+        const startDate = format(defaultDate, "yyyy-MM-dd");
         const startTime = `${defaultStartHour.toString().padStart(2, "0")}:00`;
         const endTime = `${defaultEndHour.toString().padStart(2, "0")}:00`;
 
@@ -182,7 +201,7 @@ export function ItemModal({
 
   const handleInputChange = (
     field: keyof ItemFormData,
-    value: string | boolean | string[] | number
+    value: string | boolean | string[] | number,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -200,12 +219,12 @@ export function ItemModal({
     setIsLoading(true);
     try {
       const startDateTime = formData.isAllDay
-        ? new Date(`${formData.startDate}T00:00:00`)
-        : new Date(`${formData.startDate}T${formData.startTime}:00`);
+        ? parseISO(`${formData.startDate}T00:00:00`)
+        : parseISO(`${formData.startDate}T${formData.startTime}:00`);
 
       const endDateTime = formData.isAllDay
-        ? new Date(`${formData.endDate}T23:59:59`)
-        : new Date(`${formData.endDate}T${formData.endTime}:00`);
+        ? parseISO(`${formData.endDate}T23:59:59`)
+        : parseISO(`${formData.endDate}T${formData.endTime}:00`);
 
       if (endDateTime <= startDateTime && !formData.isAllDay) {
         toast({
@@ -241,7 +260,7 @@ export function ItemModal({
           ...baseItemData,
           type: "event" as const,
           location: formData.location?.trim() || undefined,
-          attendees: formData.attendees?.filter(a => a.trim()) || undefined,
+          attendees: formData.attendees?.filter((a) => a.trim()) || undefined,
         };
       }
 
@@ -294,19 +313,24 @@ export function ItemModal({
   const categoryConfig = getCategoryConfig(formData.category);
 
   const formatDateForDisplay = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return parseISO(dateString).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
   };
 
-  const parseDate = (dateString: string) => {
-    return new Date(dateString);
+  const parseDate = (dateString?: string) => {
+    if (!dateString) return undefined;
+
+    const d = parseISO(dateString);
+
+    return isNaN(d.getTime()) ? undefined : d;
   };
 
-  const formatDateForInput = (date: Date) => {
-    return date.toISOString().split("T")[0];
+  const formatDateForInput = (date?: Date) => {
+    if (!date || isNaN(date.getTime())) return "";
+    return format(date, "yyyy-MM-dd");
   };
 
   return (
@@ -400,16 +424,25 @@ export function ItemModal({
                     <div
                       className={cn(
                         "h-3 w-3 rounded-full",
-                        categoryConfig.bgColor.includes("purple") && "bg-purple-500",
-                        categoryConfig.bgColor.includes("blue") && "bg-blue-500",
-                        categoryConfig.bgColor.includes("green") && "bg-green-500",
+                        categoryConfig.bgColor.includes("purple") &&
+                          "bg-purple-500",
+                        categoryConfig.bgColor.includes("blue") &&
+                          "bg-blue-500",
+                        categoryConfig.bgColor.includes("green") &&
+                          "bg-green-500",
                         categoryConfig.bgColor.includes("red") && "bg-red-500",
-                        categoryConfig.bgColor.includes("orange") && "bg-orange-500",
-                        categoryConfig.bgColor.includes("yellow") && "bg-yellow-500",
-                        categoryConfig.bgColor.includes("pink") && "bg-pink-500",
-                        categoryConfig.bgColor.includes("indigo") && "bg-indigo-500",
-                        categoryConfig.bgColor.includes("teal") && "bg-teal-500",
-                        categoryConfig.bgColor.includes("gray") && "bg-gray-500"
+                        categoryConfig.bgColor.includes("orange") &&
+                          "bg-orange-500",
+                        categoryConfig.bgColor.includes("yellow") &&
+                          "bg-yellow-500",
+                        categoryConfig.bgColor.includes("pink") &&
+                          "bg-pink-500",
+                        categoryConfig.bgColor.includes("indigo") &&
+                          "bg-indigo-500",
+                        categoryConfig.bgColor.includes("teal") &&
+                          "bg-teal-500",
+                        categoryConfig.bgColor.includes("gray") &&
+                          "bg-gray-500",
                       )}
                     />
                     {categoryConfig.label}
@@ -423,16 +456,20 @@ export function ItemModal({
                       <div
                         className={cn(
                           "h-3 w-3 rounded-full",
-                          category.bgColor.includes("purple") && "bg-purple-500",
+                          category.bgColor.includes("purple") &&
+                            "bg-purple-500",
                           category.bgColor.includes("blue") && "bg-blue-500",
                           category.bgColor.includes("green") && "bg-green-500",
                           category.bgColor.includes("red") && "bg-red-500",
-                          category.bgColor.includes("orange") && "bg-orange-500",
-                          category.bgColor.includes("yellow") && "bg-yellow-500",
+                          category.bgColor.includes("orange") &&
+                            "bg-orange-500",
+                          category.bgColor.includes("yellow") &&
+                            "bg-yellow-500",
                           category.bgColor.includes("pink") && "bg-pink-500",
-                          category.bgColor.includes("indigo") && "bg-indigo-500",
+                          category.bgColor.includes("indigo") &&
+                            "bg-indigo-500",
                           category.bgColor.includes("teal") && "bg-teal-500",
-                          category.bgColor.includes("gray") && "bg-gray-500"
+                          category.bgColor.includes("gray") && "bg-gray-500",
                         )}
                       />
                       {category.label}
@@ -488,13 +525,18 @@ export function ItemModal({
 
               {/* Estimated Duration */}
               <div className="space-y-2">
-                <Label htmlFor="estimatedDuration">Estimated Duration (minutes)</Label>
+                <Label htmlFor="estimatedDuration">
+                  Estimated Duration (minutes)
+                </Label>
                 <Input
                   id="estimatedDuration"
                   type="number"
                   value={formData.estimatedDuration}
                   onChange={(e) =>
-                    handleInputChange("estimatedDuration", parseInt(e.target.value) || 60)
+                    handleInputChange(
+                      "estimatedDuration",
+                      parseInt(e.target.value) || 60,
+                    )
                   }
                   min={1}
                   max={1440}
@@ -534,7 +576,9 @@ export function ItemModal({
                 <Input
                   id="location"
                   value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("location", e.target.value)
+                  }
                   placeholder="Enter event location..."
                   maxLength={100}
                 />
@@ -552,7 +596,10 @@ export function ItemModal({
                   onChange={(e) =>
                     handleInputChange(
                       "attendees",
-                      e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
+                      e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     )
                   }
                   placeholder="Enter attendee names or emails..."
@@ -573,7 +620,9 @@ export function ItemModal({
               <Switch
                 id="isAllDay"
                 checked={formData.isAllDay}
-                onCheckedChange={(checked) => handleInputChange("isAllDay", checked)}
+                onCheckedChange={(checked) =>
+                  handleInputChange("isAllDay", checked)
+                }
               />
               <Label htmlFor="isAllDay">All day</Label>
             </div>
@@ -600,7 +649,10 @@ export function ItemModal({
                       selected={parseDate(formData.startDate)}
                       onSelect={(date) => {
                         if (date) {
-                          handleInputChange("startDate", formatDateForInput(date));
+                          handleInputChange(
+                            "startDate",
+                            formatDateForInput(date),
+                          );
                           setStartDateOpen(false);
                         }
                       }}
@@ -631,7 +683,10 @@ export function ItemModal({
                       selected={parseDate(formData.endDate)}
                       onSelect={(date) => {
                         if (date) {
-                          handleInputChange("endDate", formatDateForInput(date));
+                          handleInputChange(
+                            "endDate",
+                            formatDateForInput(date),
+                          );
                           setEndDateOpen(false);
                         }
                       }}
@@ -650,7 +705,9 @@ export function ItemModal({
                       id="startTime"
                       type="time"
                       value={formData.startTime}
-                      onChange={(e) => handleInputChange("startTime", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("startTime", e.target.value)
+                      }
                     />
                   </div>
 
@@ -661,7 +718,9 @@ export function ItemModal({
                       id="endTime"
                       type="time"
                       value={formData.endTime}
-                      onChange={(e) => handleInputChange("endTime", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("endTime", e.target.value)
+                      }
                     />
                   </div>
                 </>

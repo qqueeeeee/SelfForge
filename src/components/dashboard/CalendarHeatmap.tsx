@@ -15,6 +15,7 @@ interface DayData {
 }
 
 export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
+  const safeEvents = Array.isArray(events) ? events : [];
   // Generate data for the last 12 weeks (84 days)
   const generateHeatmapData = (): DayData[] => {
     const data: DayData[] = [];
@@ -22,8 +23,8 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
 
     for (let i = 83; i >= 0; i--) {
       const date = startOfDay(subDays(today, i));
-      const dayEvents = events.filter(event =>
-        isSameDay(event.startDateTime, date)
+      const dayEvents = safeEvents.filter((event) =>
+        isSameDay(event.startDateTime, date),
       );
 
       data.push({
@@ -37,7 +38,7 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
   };
 
   const heatmapData = generateHeatmapData();
-  const maxCount = Math.max(...heatmapData.map(d => d.count), 1);
+  const maxCount = Math.max(...heatmapData.map((d) => d.count), 1);
 
   // Group by weeks for proper grid layout
   const weeks: DayData[][] = [];
@@ -61,8 +62,20 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
     return `${dayData.count} ${eventText} on ${dateStr}`;
   };
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   // Get month labels for the weeks
   const getMonthLabels = () => {
@@ -87,7 +100,12 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm", className)}>
+    <div
+      className={cn(
+        "bg-card rounded-xl p-6 border border-border shadow-sm",
+        className,
+      )}
+    >
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-foreground mb-1">
           Activity Overview
@@ -122,7 +140,7 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
                 key={day}
                 className={cn(
                   "text-xs text-muted-foreground h-2.5 flex items-center",
-                  index % 2 === 1 ? "opacity-100" : "opacity-0"
+                  index % 2 === 1 ? "opacity-100" : "opacity-0",
                 )}
               >
                 {day}
@@ -131,13 +149,16 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
           </div>
 
           {/* Heatmap grid */}
-          <div className="grid grid-flow-col gap-1" style={{ gridTemplateRows: "repeat(7, 1fr)" }}>
+          <div
+            className="grid grid-flow-col gap-1"
+            style={{ gridTemplateRows: "repeat(7, 1fr)" }}
+          >
             {heatmapData.map((dayData, index) => (
               <div
                 key={index}
                 className={cn(
                   "w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50",
-                  getIntensity(dayData.count)
+                  getIntensity(dayData.count),
                 )}
                 title={getTooltipContent(dayData)}
               />
@@ -163,7 +184,7 @@ export function CalendarHeatmap({ events, className }: CalendarHeatmapProps) {
           <div className="text-sm">
             <span className="text-muted-foreground">Total events: </span>
             <span className="font-medium text-foreground">
-              {events.length}
+              {safeEvents.length}
             </span>
           </div>
           <div className="text-sm">
