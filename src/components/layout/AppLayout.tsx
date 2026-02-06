@@ -1,11 +1,10 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Logs,
+  Target,
   Clock,
   LayoutDashboard,
-	Calendar,
-  CheckSquare,
+  Calendar,
   MessageSquare,
   Settings,
   LogOut,
@@ -27,9 +26,8 @@ interface AppLayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Calendar, label: "Calendar", path: "/calendar" },
-  { icon: Clock, label: "Timer", path: "/timer" },
-  { icon: CheckSquare, label: "Tasks", path: "/tasks" },
-  { icon: Logs, label: "Timeline", path: "/timeline" },
+  { icon: Clock, label: "Focus Timer", path: "/focus" },
+  { icon: Target, label: "Goals", path: "/goals" },
   { icon: MessageSquare, label: "AI Insights", path: "/chat" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];

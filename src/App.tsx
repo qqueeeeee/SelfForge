@@ -8,78 +8,78 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Timer from "./pages/Timer";
-import Tasks from "./pages/Tasks";
-import Timeline from "./pages/Timeline";
+import Goals from "./pages/Goals";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
+import Debug from "./pages/Debug";
 
 export default function App() {
-	return (
-		<ThemeProvider>
-		<TooltipProvider>
-		<Toaster />
-		<Sonner />
-		<BrowserRouter>
-		<Routes>
-		<Route
-		path="/"
-		element={
-			<AppLayout>
-			<Dashboard />
-			</AppLayout>
-		}
-		/>
-		<Route
-		path="/chat"
-		element={
-			<AppLayout>
-			<Chat />
-			</AppLayout>
-		}
-		/>
-		<Route 
-		path="/calendar"
-		element={
-			<AppLayout>
-			<Calendar />
-			</AppLayout>
-		}
-		/>
-		<Route
-		path="/timer"
-		element={
-			<AppLayout>
-			<Timer />
-			</AppLayout>
-		}
-		/>
-		<Route
-		path="/Tasks"
-		element={
-			<AppLayout>
-			<Tasks />
-			</AppLayout>
-		}
-		/>
-		<Route
-		path="/timeline"
-		element={
-			<AppLayout>
-			<Timeline />
-			</AppLayout>
-		}
-		/>
-		<Route
-		path="/settings"
-		element={
-			<AppLayout>
-			<Settings />
-			</AppLayout>
-		}
-		/>
-		</Routes>
-		</BrowserRouter>
-		</TooltipProvider>
-		</ThemeProvider>
-	);
+  return (
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <AppLayout>
+                  <Chat />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <AppLayout>
+                  <Calendar />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/focus"
+              element={
+                <AppLayout>
+                  <Timer />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/goals"
+              element={
+                <AppLayout>
+                  <Goals />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AppLayout>
+                  <Settings />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/debug"
+              element={
+                <AppLayout>
+                  <Debug />
+                </AppLayout>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  );
 }
