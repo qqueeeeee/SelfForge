@@ -193,14 +193,12 @@ else:
     print("⚠️ GROQ_API_KEY not found - AI features disabled")
     rag_chain = None
 
+
 # ------------------ Helper Functions ------------------
 
-
 def get_user_productivity_data(db: Session, days: int = 30) -> str:
-    """Generate comprehensive productivity data for AI context"""
     since = datetime.utcnow() - timedelta(days=days)
 
-    # Get calendar items
     calendar_items = (
         db.query(CalendarItem)
         .filter(CalendarItem.created_at >= since)
@@ -208,10 +206,8 @@ def get_user_productivity_data(db: Session, days: int = 30) -> str:
         .all()
     )
 
-    # Get goals
     goals = db.query(Goal).all()
 
-    # Get timer sessions
     timer_sessions = (
         db.query(TimerSession)
         .filter(TimerSession.start_time >= since)
@@ -219,7 +215,6 @@ def get_user_productivity_data(db: Session, days: int = 30) -> str:
         .all()
     )
 
-    # Get daily logs
     daily_logs = (
         db.query(DailyLog)
         .filter(DailyLog.log_date >= since)
@@ -227,89 +222,85 @@ def get_user_productivity_data(db: Session, days: int = 30) -> str:
         .all()
     )
 
-    # Format data for AI
     data_summary = []
 
-    # Calendar summary
-    tasks = [item for item in calendar_items if item.item_type == "task"]
-    events = [item for item in calendar_items if item.item_type == "event"]
-    completed_tasks = [task for task in tasks if task.completed]
+    # ---------------- Calendar ----------------
+
+    tasks = [i for i in calendar_items if i.item_type == "task"]
+    events = [i for i in calendar_items if i.item_type == "event"]
+    completed_tasks = [t for t in tasks if t.completed]
+
+    task_count = len(tasks)
+
+    completion_rate = (
+        len(completed_tasks) / task_count * 100
+        if task_count > 0
+        else 0
+    )
 
     data_summary.append(f"CALENDAR DATA ({days} days):")
-    data_summary.append(
-        f"- Total tasks: {len(tasks)} (completed: {len(completed_tasks)})"
-    )
+    data_summary.append(f"- Total tasks: {task_count}")
+    data_summary.append(f"- Completed tasks: {len(completed_tasks)}")
     data_summary.append(f"- Total events: {len(events)}")
-    data_summary.append(
-        f"- Task completion rate: {(len(completed_tasks) / len(tasks) * 100) if tasks else 0:.1f}%"
-    )
+    data_summary.append(f"- Completion rate: {completion_rate:.1f}%")
 
-    if tasks:
-        data_summary.append("\nRECENT TASKS:")
-        for task in tasks[:5]:  # Last 5 tasks
-            status = "✓" if task.completed else "○"
-            data_summary.append(
-                f"  {status} {task.title} [{task.category}] - {task.start_datetime.strftime('%Y-%m-%d')}"
-            )
+    # ---------------- Goals ----------------
 
-    # Goals summary
     if goals:
-        data_summary.append(f"\nGOALS:")
+        data_summary.append("\nGOALS:")
+
         for goal in goals:
-            milestones_completed = sum(1 for m in goal.milestones if m.completed)
-            total_milestones = len(goal.milestones)
+            milestones = goal.milestones or []
+
+            completed = sum(1 for m in milestones if m.completed)
+            total = len(milestones)
+
+            progress = (completed / total * 100) if total else 0
+
             data_summary.append(
-                f"- {goal.title}: {goal.progress}% complete "
-                f"({milestones_completed}/{total_milestones} milestones) - {goal.status}"
+                f"- {goal.title}: {progress:.1f}% ({completed}/{total})"
             )
 
-    # Timer sessions summary
-    if timer_sessions:
-        total_focus_time = sum(
-            session.duration for session in timer_sessions if session.completed
-        )
-        data_summary.append(f"\nFOCUS TIME ({days} days):")
-        data_summary.append(f"- Total sessions: {len(timer_sessions)}")
-        data_summary.append(
-            f"- Total focus time: {total_focus_time} minutes ({total_focus_time / 60:.1f} hours)"
-        )
+    # ---------------- Focus ----------------
 
-        # Category breakdown
-        category_times = {}
-        for session in timer_sessions:
-            if session.completed:
-                category_times[session.category] = (
-                    category_times.get(session.category, 0) + session.duration
-                )
+    completed_sessions = [s for s in timer_sessions if s.completed]
 
-        if category_times:
-            data_summary.append("- Time by category:")
-            for category, time in sorted(
-                category_times.items(), key=lambda x: x[1], reverse=True
-            ):
-                data_summary.append(f"  • {category}: {time} min")
+    total_focus_time = sum(s.duration for s in completed_sessions)
 
-    # Habits summary
-    if daily_logs:
-        data_summary.append(f"\nHABITS & WELLNESS ({len(daily_logs)} days logged):")
-        avg_sleep = sum(log.sleep_hours or 0 for log in daily_logs) / len(daily_logs)
-        avg_mood = sum(log.mood or 0 for log in daily_logs if log.mood) / len(
-            [log for log in daily_logs if log.mood]
-        )
-        gym_days = sum(1 for log in daily_logs if log.gym_completed)
-
-        data_summary.append(f"- Average sleep: {avg_sleep:.1f} hours/night")
-        data_summary.append(f"- Average mood: {avg_mood:.1f}/10")
-        data_summary.append(
-            f"- Gym sessions: {gym_days}/{len(daily_logs)} days ({gym_days / len(daily_logs) * 100:.1f}%)"
-        )
-
-    return (
-        "\n".join(data_summary)
-        if data_summary
-        else "No recent productivity data available."
+    data_summary.append(f"\nFOCUS ({days} days):")
+    data_summary.append(f"- Sessions: {len(completed_sessions)}")
+    data_summary.append(
+        f"- Total focus: {total_focus_time} min ({total_focus_time/60:.1f} hrs)"
     )
 
+    # ---------------- Habits ----------------
+
+    if daily_logs:
+        sleep_values = [l.sleep_hours for l in daily_logs if l.sleep_hours]
+        mood_values = [l.mood for l in daily_logs if l.mood]
+
+        avg_sleep = (
+            sum(sleep_values) / len(sleep_values)
+            if sleep_values
+            else 0
+        )
+
+        avg_mood = (
+            sum(mood_values) / len(mood_values)
+            if mood_values
+            else 0
+        )
+
+        gym_days = sum(1 for l in daily_logs if l.gym_completed)
+
+        data_summary.append(f"\nHABITS ({len(daily_logs)} days):")
+        data_summary.append(f"- Avg sleep: {avg_sleep:.1f}h")
+        data_summary.append(f"- Avg mood: {avg_mood:.1f}/10")
+        data_summary.append(
+            f"- Gym: {gym_days}/{len(daily_logs)} days"
+        )
+
+    return "\n".join(data_summary) or "No productivity data available."
 
 # ------------------ Routes ------------------
 
@@ -771,8 +762,6 @@ def update_user_preferences(
 
 
 # ------------------ Analytics Routes ------------------
-
-
 @app.get("/analytics/productivity", response_model=ProductivityStatsResponse)
 def get_productivity_stats(
     start_date: Optional[datetime] = Query(None),
@@ -780,13 +769,23 @@ def get_productivity_stats(
     db: Session = Depends(get_db),
 ):
     """Get comprehensive productivity statistics"""
-    # Default to last 30 days if no dates provided
-    if not start_date:
-        start_date = datetime.utcnow() - timedelta(days=30)
-    if not end_date:
-        end_date = datetime.utcnow()
 
-    # Get calendar items in date range
+    # ---------------- Defaults ----------------
+
+    now = datetime.utcnow()
+
+    if not start_date:
+        start_date = now - timedelta(days=30)
+
+    if not end_date:
+        end_date = now
+
+    # Ensure valid range
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # ---------------- Queries ----------------
+
     calendar_items = (
         db.query(CalendarItem)
         .filter(
@@ -796,7 +795,6 @@ def get_productivity_stats(
         .all()
     )
 
-    # Get timer sessions in date range
     timer_sessions = (
         db.query(TimerSession)
         .filter(
@@ -807,30 +805,55 @@ def get_productivity_stats(
         .all()
     )
 
-    # Calculate statistics
-    tasks = [item for item in calendar_items if item.item_type == "task"]
-    completed_tasks = [task for task in tasks if task.completed]
-    events = [item for item in calendar_items if item.item_type == "event"]
+    # ---------------- Categorization ----------------
 
-    total_focus_time = sum(session.duration for session in timer_sessions)
-    total_deep_work_time = sum(
-        session.duration
-        for session in timer_sessions
-        if session.category == "deep-work"
+    tasks = [i for i in calendar_items if i.item_type == "task"]
+    completed_tasks = [t for t in tasks if t.completed]
+    events = [i for i in calendar_items if i.item_type == "event"]
+
+    # ---------------- Focus Time ----------------
+
+    total_focus_time = sum(
+        s.duration for s in timer_sessions if s.duration
     )
 
-    # Category breakdown
-    category_breakdown = {}
-    for item in calendar_items:
-        category_breakdown[item.category] = category_breakdown.get(item.category, 0) + 1
+    total_deep_work_time = sum(
+        s.duration
+        for s in timer_sessions
+        if s.duration and s.category == "deep-work"
+    )
 
-    # Daily averages
-    days_in_range = (end_date - start_date).days or 1
+    # ---------------- Category Breakdown ----------------
+
+    category_breakdown: dict[str, int] = {}
+
+    for item in calendar_items:
+        cat = item.category or "uncategorized"
+        category_breakdown[cat] = category_breakdown.get(cat, 0) + 1
+
+    # ---------------- Daily Averages ----------------
+
+    days_in_range = max((end_date - start_date).days, 1)
+
+    tasks_per_day = len(tasks) / days_in_range
+    events_per_day = len(events) / days_in_range
+    focus_per_day = total_focus_time / days_in_range
+
     daily_averages = {
-        "tasks_per_day": len(tasks) / days_in_range,
-        "events_per_day": len(events) / days_in_range,
-        "focus_minutes_per_day": total_focus_time / days_in_range,
+        "tasks_per_day": round(tasks_per_day, 2),
+        "events_per_day": round(events_per_day, 2),
+        "focus_minutes_per_day": round(focus_per_day, 2),
     }
+
+    # ---------------- Completion Rate ----------------
+
+    completion_rate = (
+        len(completed_tasks) / len(tasks)
+        if tasks
+        else 0
+    )
+
+    # ---------------- Response ----------------
 
     return ProductivityStatsResponse(
         total_tasks=len(tasks),
@@ -838,31 +861,30 @@ def get_productivity_stats(
         total_events=len(events),
         total_focus_time_minutes=total_focus_time,
         total_deep_work_minutes=total_deep_work_time,
-        completion_rate=len(completed_tasks) / len(tasks) if tasks else 0,
+        completion_rate=round(completion_rate, 3),
         category_breakdown=category_breakdown,
         daily_averages=daily_averages,
     )
 
-
-# ------------------ AI Chat Routes ------------------
+# ------------------ ai chat routes ------------------
 
 
 @app.post("/ask", response_model=AskResponse)
-def ask_ai(req: AskRequest, db: Session = Depends(get_db)):
-    """Ask the AI assistant with access to productivity data"""
+def ask_ai(req: AskRequest, db: session = Depends(get_db)):
+    """ask the ai assistant with access to productivity data"""
     if not ai_enabled or not rag_chain:
         return AskResponse(
-            response="AI features are currently disabled. Please set GROQ_API_KEY environment variable to enable AI assistance.",
+            response="ai features are currently disabled. please set groq_api_key environment variable to enable ai assistance.",
             context_used=req.include_context,
             timestamp=datetime.utcnow(),
         )
 
     try:
-        # Get user's productivity data for context
+        # get user's productivity data for context
         productivity_data = get_user_productivity_data(db, days=30)
 
         if rag_chain is not None:
-            # Use RAG chain with knowledge base
+            # use rag chain with knowledge base
             result = rag_chain.invoke(
                 {
                     "input": req.question,
@@ -871,18 +893,18 @@ def ask_ai(req: AskRequest, db: Session = Depends(get_db)):
             )
             response_text = result["answer"]
         else:
-            # Fallback to direct LLM call without knowledge base
+            # fallback to direct llm call without knowledge base
             prompt_text = f"""
-You are a personal productivity assistant.
+you are a personal productivity assistant.
 
-User's productivity data:
+user's productivity data:
 {productivity_data}
 
-Question: {req.question}
+question: {req.question}
 
-Provide helpful insights based on the data above.
+provide helpful insights based on the data above.
 """
-            response_text = f"Based on your productivity data, here's my analysis: {req.question}. (Note: Knowledge base unavailable, providing basic response.)"
+            response_text = f"based on your productivity data, here's my analysis: {req.question}. (note: knowledge base unavailable, providing basic response.)"
 
         return AskResponse(
             response=response_text,
@@ -891,21 +913,21 @@ Provide helpful insights based on the data above.
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ai processing error: {str(e)}")
 
 
-# ------------------ Legacy Routes (for backward compatibility) ------------------
+# ------------------ legacy routes (for backward compatibility) ------------------
 
 
 @app.get("/logs")
-def get_legacy_logs(days: int = 30, db: Session = Depends(get_db)):
-    """Legacy route for habit logs"""
+def get_legacy_logs(days: int = 30, db: session = Depends(get_db)):
+    """legacy route for habit logs"""
     since = datetime.utcnow() - timedelta(days=days)
 
     logs = (
-        db.query(HabitLog)
-        .filter(HabitLog.timestamp >= since)
-        .order_by(HabitLog.timestamp.desc())
+        db.query(habitlog)
+        .filter(habitlog.timestamp >= since)
+        .order_by(habitlog.timestamp.desc())
         .all()
     )
 
@@ -923,10 +945,10 @@ def get_legacy_logs(days: int = 30, db: Session = Depends(get_db)):
 @app.post("/logs")
 def create_legacy_log(
     log: dict,
-    db: Session = Depends(get_db),
+    db: session = Depends(get_db),
 ):
-    """Legacy route for creating habit logs"""
-    entry = HabitLog(
+    """legacy route for creating habit logs"""
+    entry = habitlog(
         habit=log.get("habit"),
         value=log.get("value"),
         timestamp=log.get("timestamp") or datetime.utcnow(),
@@ -943,18 +965,18 @@ if __name__ == "__main__":
     try:
         import uvicorn
 
-        print("🚀 Starting SelfForge Backend Server...")
-        print("📋 API documentation: http://127.0.0.1:8000/docs")
-        uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
-    except ImportError:
-        print("❌ uvicorn not found. Installing...")
+        print("🚀 starting selfforge backend server...")
+        print("📋 api documentation: http://127.0.0.1:8000/docs")
+        uvicorn.run(app, host="127.0.0.1", port=8000, reload=true)
+    except importerror:
+        print("❌ uvicorn not found. installing...")
         import subprocess
         import sys
 
         subprocess.check_call([sys.executable, "-m", "pip", "install", "uvicorn"])
         import uvicorn
 
-        print("✅ uvicorn installed. Starting server...")
+        print("✅ uvicorn installed. starting server...")
         uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
     except Exception as e:
         print(f"❌ Failed to start server: {e}")

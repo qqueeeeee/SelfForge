@@ -81,7 +81,7 @@ export default function Chat() {
       });
 
       if (!res.ok) {
-        throw new Error("Backend error");
+        throw new Error("Backend error: ${err?.message || err} ");
       }
 
       const data = await res.json();
@@ -95,7 +95,7 @@ export default function Chat() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
-      console.error("Chat error:", error);
+      console.error("Chat error: ${err?.message || err} ",);
       toast({
         title: "Error",
         description:
