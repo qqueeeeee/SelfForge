@@ -6,7 +6,7 @@ import { Send, Bot, User, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-
+import { aiApi } from "@/lib/api";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -70,32 +70,25 @@ export default function Chat() {
           content: m.content,
         }));
 
-      const res = await fetch("http://localhost:8000/ask", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: userMessage.content,
-        }),
+      const res = await aiApi.ask({
+        question: userMessage.content,
       });
 
-      if (!res.ok) {
-        throw new Error("Backend error: ${err?.message || err} ");
+      if (res.error || !res.data) {
+        throw new Error(res.error || "Backend error");
       }
-
-      const data = await res.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response,
+        content: res.data.response,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
-      console.error("Chat error: ${err?.message || err} ",);
+      console.error("Chat error:", error);
+
       toast({
         title: "Error",
         description:
@@ -103,7 +96,6 @@ export default function Chat() {
         variant: "destructive",
       });
 
-      // Add error message to chat
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -111,6 +103,7 @@ export default function Chat() {
           "I'm sorry, I encountered an error. Please try again in a moment.",
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);

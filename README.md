@@ -1,116 +1,82 @@
-# SelfForge
+# SelfForge — Personal Productivity & Focus System
 
-**SelfForge** is a local-first productivity desktop app for tracking habits, tasks, timers, and personal insights supported by AI.  
-It combines timeline logging, customizable trackers, and optional AI guidance from your own notes and habit history.
+SelfForge is a full-stack productivity platform for task management, calendar planning, habit tracking, and AI-powered insights.
 
----
-
-## Overview
-
-SelfForge helps you:
-
-✅ Track habits and routines  
-✅ Log tasks with optional reminders  
-✅ Record daily deep-work timers  
-✅ Visualize your timeline  
-✅ Get personalized insights powered by RAG + LLMs  
-✅ Backup your data locally
-
-Built with:
-- **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui  
-- **Backend:** Python FastAPI (local, optional)  
-- **Desktop:** Tauri (cross-platform native builds)  
-- **AI:** Groq LLM & FAISS for RAG indexing
+Built to help users plan, execute, and analyze their daily work with minimal friction.
 
 ---
 
-## Features
+## 🚀 Features
 
-### Core
-- Daily habit tracker (sleep, study, screen time, mood, etc.)
-- Flexible custom habits
-- Deep-work timer with history → timeline sync
-- Task list with reminders and timeline logging
-- Full timeline view of your day
-- Data export (JSON/CSV)
-
-### AI Insights
-- Ask questions about your logs & notes
-- RAG search on Obsidian or local notes
-- Personalized coaching responses
-
-### Desktop Focus
-- Local data only — no cloud unless you want
-- Backup & export your data easily
-- Crash safe with error boundary and robust storage
+- 📅 Custom calendar (day/week/month views)
+- ✅ Task & event management
+- 🔥 Productivity streak tracking
+- 📊 Analytics dashboard (focus time, habits, trends)
+- ⏱ Pomodoro & deep-work timer
+- 🤖 AI assistant for productivity insights
+- ☁️ Cloud deployment (AWS)
 
 ---
 
-## Tech Stack
-
-**Frontend**
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-
-**Desktop**
-- Tauri
-
-**Backend (local)**
-- Python
-- FastAPI
-- FAISS (vector search)
-- Optional Groq LLM integration
-
----
-
-## Project Structure
-
-```text
-SelfForge/
-├─ src/ # React frontend
-├─ backend/ # FastAPI backend (local)
-├─ src-tauri/ # Tauri desktop wrapper
-├─ public/
-├─ README.md
-└─ .gitignore
-```
-
-
-## Running in Development
+## 🛠 Tech Stack
 
 ### Frontend
+- React + TypeScript (Vite)
+- Tailwind CSS
+- shadcn/ui
+- React Router
+
+### Backend
+- FastAPI (Python)
+- SQLAlchemy + PostgreSQL/SQLite
+- Uvicorn
+- LangChain + LLM (RAG pipeline)
+
+###Demo Infrastructure
+- AWS EC2 (Backend)
+- AWS S3 (Frontend Hosting)
+
+---
+
+## 📦 Architecture
+
+Frontend (S3 + Vite)
+↓
+REST API (FastAPI)
+↓
+Database (SQLAlchemy)
+↓
+AI Layer (RAG + LLM)
+
+---
+
+## ⚙️ Setup (Local)
+
+### Backend
+
 ```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+### Frontend
+
+```
 npm install
 npm run dev
 ```
 
-### Backend (optional)
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app:app --reload
-```
+[Live Demo](http://selfforge.s3-website.eu-north-1.amazonaws.com/)
 
-### Desktop Build (Tauri)
-```bash
-npm run tauri dev    # dev mode
-npm run tauri build  # production build
-```
+### Key Learnings
 
-### Data & Backups
+Full-stack system design
+REST API architecture
+AI integration (RAG + LLM)
+Cloud deployment (AWS)
+Production debugging
+CORS, security, scaling
 
-All data is stored locally.
-
-You can export:
-
-- tasks
-- timeline history
-- timers
-- logs
-
-from Settings → Export Data.
