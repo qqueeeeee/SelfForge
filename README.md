@@ -32,7 +32,7 @@ Built to help users plan, execute, and analyze their daily work with minimal fri
 - Uvicorn
 - LangChain + LLM (RAG pipeline)
 
-###Demo Infrastructure
+### Demo Infrastructure
 - AWS EC2 (Backend)
 - AWS S3 (Frontend Hosting)
 
