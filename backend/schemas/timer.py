@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Optional, Field
+from typing import Optional
+from pydantic import BaseModel, Field
 from datetime import datetime 
+from .common import TimestampMixin
 
 class TimerSessionBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { API_BASE_URL } from "@/lib/api";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -52,22 +53,14 @@ export default function Auth() {
 		formDetails.append('password', password);
 
     try {
-      /**
-       * Future Backend Integration:
-       * Replace Supabase auth with custom endpoints:
-       * - POST /api/auth/login for sign in
-       * - POST /api/auth/register for sign up
-       * - POST /api/auth/logout for sign out
-       */
       if (isLogin) {
-        const response = await fetch('http://localhost:8000/token', {
+        const response = await fetch(`${API_BASE_URL}/token`, {
 					method: "POST",
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded',
 					},
 					body: formDetails, 
         });
-				console.log(formDetails);
 				if (response.ok) {
 					const data = await response.json();
 					localStorage.setItem('token', data.access_token);			
@@ -83,7 +76,7 @@ export default function Auth() {
         navigate(from, { replace: true });
 
       } else {
-        const response = await fetch('http://localhost:8000/register', {
+        const response = await fetch(`${API_BASE_URL}/register`, {
 					method: "POST",
 					headers: { 
 						'Content-Type': 'application/json',

@@ -6,12 +6,23 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-SECRET_KEY = os.getenv("SECRET_JWT_KEY")
 ALGORITHM = "HS256"
+
+
+def _get_secret_key() -> str:
+    secret_key = os.getenv("SECRET_JWT_KEY")
+    if not secret_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server auth is not configured. Missing SECRET_JWT_KEY.",
+        )
+    return secret_key
 
 def get_db():
     db = SessionLocal()
@@ -36,7 +47,7 @@ async def get_current_user(
     )
     
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) #type:ignore
+        payload = jwt.decode(token, _get_secret_key(), algorithms=[ALGORITHM])
         email: str = payload.get("sub") #type:ignore
         if email is None:
             raise credentials_exception

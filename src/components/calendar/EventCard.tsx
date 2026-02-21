@@ -6,7 +6,7 @@ import {
   isMultiDayEvent,
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
-import { Clock, MapPin, User, CheckSquare, Calendar } from "lucide-react";
+import { Clock, MapPin, CheckSquare } from "lucide-react";
 
 interface EventCardProps {
   event: CalendarEvent;
@@ -51,7 +51,6 @@ export function ItemCard({
     return `${formatTime(item.startDateTime)} - ${formatTime(item.endDateTime)}`;
   };
 
-  // Compact version for timeline/week view
   if (compact) {
     return (
       <div
@@ -95,9 +94,9 @@ export function ItemCard({
           </span>
         </div>
         {showTime && !item.isAllDay && (
-          <div className="mt-0.5 flex items-center gap-1 text-xs opacity-75">
+          <div className="mt-0.5 flex items-center gap-1 text-xs opacity-75 min-w-0">
             <Clock className="h-3 w-3" />
-            <span>{formatTime(item.startDateTime)}</span>
+            <span className="truncate">{formatItemTime()}</span>
           </div>
         )}
       </div>
@@ -114,7 +113,6 @@ export function ItemCard({
         className,
       )}
     >
-      {/* Category indicator */}
       <div className="mb-2 flex items-center gap-2">
         {item.type === "task" ? (
           <CheckSquare
@@ -144,7 +142,6 @@ export function ItemCard({
         </span>
       </div>
 
-      {/* Item title */}
       <h3
         className={cn(
           "font-semibold leading-tight",
@@ -157,7 +154,6 @@ export function ItemCard({
         {item.title}
       </h3>
 
-      {/* Time info */}
       {showTime && (
         <div
           className={cn(
@@ -171,7 +167,6 @@ export function ItemCard({
         </div>
       )}
 
-      {/* Task-specific info */}
       {item.type === "task" && (
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
           <span
@@ -193,7 +188,6 @@ export function ItemCard({
         </div>
       )}
 
-      {/* Description */}
       {item.description && (
         <p
           className={cn(
@@ -206,7 +200,6 @@ export function ItemCard({
         </p>
       )}
 
-      {/* Multi-day indicator */}
       {isMultiDay && (
         <div
           className={cn(
@@ -220,13 +213,11 @@ export function ItemCard({
         </div>
       )}
 
-      {/* Hover overlay */}
       <div className="absolute inset-0 rounded-lg bg-white/10 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-black/10" />
     </div>
   );
 }
 
-// Mini item card for month view
 export function ItemCardMini({ item, onClick, className }: ItemCardProps) {
   const categoryConfig = getCategoryConfig(item.category);
 
@@ -279,7 +270,6 @@ export function ItemCardMini({ item, onClick, className }: ItemCardProps) {
   );
 }
 
-// Legacy EventCard component for backward compatibility
 export function EventCard({
   event,
   onClick,
@@ -298,7 +288,6 @@ export function EventCard({
   );
 }
 
-// Legacy EventCardMini component for backward compatibility
 export function EventCardMini({ event, onClick, className }: EventCardProps) {
   return <ItemCardMini item={event} onClick={onClick} className={className} />;
 }

@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
+from .common import TimestampMixin
 
 
 class CalendarItemBase(BaseModel):

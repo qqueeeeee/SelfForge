@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Target, Calendar, TrendingUp, CheckCircle2, Circle, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { format, addDays, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
+import { goalsApi, transformGoalToFrontend } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Goal {
   id: string;
@@ -34,67 +36,34 @@ interface Milestone {
   completedAt?: Date;
 }
 
-const mockGoals: Goal[] = [
-  {
-    id: "1",
-    title: "Launch Personal Productivity App",
-    description: "Complete development and launch of SelfForge productivity application",
-    category: "career",
-    priority: "high",
-    status: "in-progress",
-    targetDate: addDays(new Date(), 30),
-    progress: 75,
-    milestones: [
-      { id: "m1", title: "Complete calendar system", completed: true, completedAt: new Date() },
-      { id: "m2", title: "Build analytics dashboard", completed: true, completedAt: new Date() },
-      { id: "m3", title: "Implement goals tracking", completed: false },
-      { id: "m4", title: "Deploy to production", completed: false },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    title: "Learn TypeScript Mastery",
-    description: "Become proficient in advanced TypeScript patterns and best practices",
-    category: "learning",
-    priority: "medium",
-    status: "in-progress",
-    targetDate: addDays(new Date(), 60),
-    progress: 40,
-    milestones: [
-      { id: "m5", title: "Complete TypeScript fundamentals", completed: true, completedAt: new Date() },
-      { id: "m6", title: "Learn advanced types", completed: false },
-      { id: "m7", title: "Build complex project", completed: false },
-      { id: "m8", title: "Contribute to open source", completed: false },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    title: "Establish Daily Exercise Routine",
-    description: "Build a consistent workout habit for better health and energy",
-    category: "health",
-    priority: "high",
-    status: "in-progress",
-    targetDate: addDays(new Date(), 90),
-    progress: 60,
-    milestones: [
-      { id: "m9", title: "Set up home gym space", completed: true, completedAt: new Date() },
-      { id: "m10", title: "Complete first 30 days", completed: true, completedAt: new Date() },
-      { id: "m11", title: "Achieve 60-day streak", completed: false },
-      { id: "m12", title: "Complete 90-day challenge", completed: false },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
 export default function Goals() {
-  const [goals, setGoals] = useState<Goal[]>(mockGoals);
+  const { toast } = useToast();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [sortBy, setSortBy] = useState<"priority" | "dueDate" | "progress">("priority");
+
+  const loadGoals = useCallback(async () => {
+    setLoading(true);
+    const response = await goalsApi.getGoals();
+
+    if (response.status === 200 && response.data) {
+      setGoals(response.data.map(transformGoalToFrontend));
+    } else {
+      setGoals([]);
+      toast({
+        title: "Failed to load goals",
+        description: response.error || "Could not load goals from the backend.",
+        variant: "destructive",
+      });
+    }
+
+    setLoading(false);
+  }, [toast]);
+
+  useEffect(() => {
+    void loadGoals();
+  }, [loadGoals]);
 
   const getCategoryColor = (category: Goal["category"]) => {
     switch (category) {
@@ -166,33 +135,25 @@ export default function Goals() {
     }
   });
 
-  const toggleMilestone = (goalId: string, milestoneId: string) => {
-    setGoals(goals.map(goal => {
-      if (goal.id === goalId) {
-        const updatedMilestones = goal.milestones.map(milestone => {
-          if (milestone.id === milestoneId) {
-            return {
-              ...milestone,
-              completed: !milestone.completed,
-              completedAt: !milestone.completed ? new Date() : undefined,
-            };
-          }
-          return milestone;
-        });
+  const toggleMilestone = async (goalId: string, milestoneId: string) => {
+    const goal = goals.find((g) => g.id === goalId);
+    const milestone = goal?.milestones.find((m) => m.id === milestoneId);
+    if (!goal || !milestone) return;
 
-        const completedCount = updatedMilestones.filter(m => m.completed).length;
-        const newProgress = Math.round((completedCount / updatedMilestones.length) * 100);
+    const response = await goalsApi.updateMilestone(goalId, milestoneId, {
+      completed: !milestone.completed,
+    });
 
-        return {
-          ...goal,
-          milestones: updatedMilestones,
-          progress: newProgress,
-          status: newProgress === 100 ? "completed" : "in-progress",
-          updatedAt: new Date(),
-        };
-      }
-      return goal;
-    }));
+    if (response.status >= 200 && response.status < 300) {
+      await loadGoals();
+      return;
+    }
+
+    toast({
+      title: "Failed to update milestone",
+      description: response.error || "Could not save milestone changes.",
+      variant: "destructive",
+    });
   };
 
   const activeGoals = goals.filter(g => g.status === "in-progress" || g.status === "not-started");
@@ -421,7 +382,7 @@ export default function Goals() {
                             variant="ghost"
                             size="sm"
                             className="h-5 w-5 p-0"
-                            onClick={() => toggleMilestone(goal.id, milestone.id)}
+                            onClick={() => void toggleMilestone(goal.id, milestone.id)}
                           >
                             {milestone.completed ? (
                               <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -451,7 +412,7 @@ export default function Goals() {
         })}
       </div>
 
-      {sortedGoals.length === 0 && (
+      {!loading && sortedGoals.length === 0 && (
         <div className="text-center py-12">
           <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -469,6 +430,12 @@ export default function Goals() {
             <Plus className="h-4 w-4" />
             Create Your First Goal
           </Button>
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-12 text-muted-foreground">
+          Loading goals...
         </div>
       )}
     </div>

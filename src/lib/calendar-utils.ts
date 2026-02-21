@@ -26,9 +26,35 @@ export function getCategoryConfig(category: string): ItemCategoryConfig {
 }
 
 // Storage keys for localStorage
-const STORAGE_KEY = "selfforge-calendar-items";
-const LEGACY_STORAGE_KEY = "selfforge-calendar-events"; // For migration
+const STORAGE_KEY_BASE = "selfforge-calendar-items";
+const LEGACY_STORAGE_KEY_BASE = "selfforge-calendar-events"; // For migration
 const STORAGE_VERSION = "2.0.0";
+
+function getCurrentUserStorageKey(): string {
+  const token = localStorage.getItem("token");
+  if (!token) return "anonymous";
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return "anonymous";
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded));
+    const subject = decoded?.sub ? String(decoded.sub) : "anonymous";
+    return subject.replace(/[^a-zA-Z0-9._-]/g, "_");
+  } catch {
+    return "anonymous";
+  }
+}
+
+function getStorageKey(): string {
+  return `selfforge:${getCurrentUserStorageKey()}:${STORAGE_KEY_BASE}`;
+}
+
+function getLegacyStorageKey(): string {
+  return `selfforge:${getCurrentUserStorageKey()}:${LEGACY_STORAGE_KEY_BASE}`;
+}
 
 // Date utility functions
 export function startOfWeek(date: Date): Date {
@@ -357,7 +383,7 @@ export function saveItemsToStorage(
     };
 
     localStorage.setItem(
-      STORAGE_KEY,
+      getStorageKey(),
       JSON.stringify(storage, (key, value) => {
         if (value instanceof Date) {
           return value.toISOString();
@@ -378,7 +404,7 @@ export function saveEventsToStorage(events: CalendarEvent[]): void {
 export function loadItemsFromStorage(): (CalendarTask | CalendarEvent)[] {
   try {
     // Try new storage format first
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey());
     if (stored) {
       const storage: CalendarStorage = JSON.parse(stored, (key, value) => {
         if (
@@ -395,7 +421,7 @@ export function loadItemsFromStorage(): (CalendarTask | CalendarEvent)[] {
     }
 
     // Try legacy storage format
-    const legacyStored = localStorage.getItem(LEGACY_STORAGE_KEY);
+    const legacyStored = localStorage.getItem(getLegacyStorageKey());
     if (legacyStored) {
       const storage: EventStorage = JSON.parse(legacyStored, (key, value) => {
         if (
@@ -418,7 +444,7 @@ export function loadItemsFromStorage(): (CalendarTask | CalendarEvent)[] {
       // Migrate categories and save in new format
       const fixedItems = migrateCustomItemCategories(migratedItems);
       saveItemsToStorage(fixedItems);
-      localStorage.removeItem(LEGACY_STORAGE_KEY);
+      localStorage.removeItem(getLegacyStorageKey());
 
       return fixedItems;
     }
@@ -439,8 +465,8 @@ export function loadEventsFromStorage(): CalendarEvent[] {
 
 export function clearItemsStorage(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
+    localStorage.removeItem(getLegacyStorageKey());
   } catch (error) {
     console.error("Failed to clear calendar storage:", error);
   }
@@ -694,8 +720,8 @@ export function createTaskFromTimer(timerSession: {
 export function clearCorruptedCalendarData(): void {
   try {
     // Clear all calendar-related localStorage data
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
+    localStorage.removeItem(getLegacyStorageKey());
 
     console.log("Cleared corrupted calendar data from localStorage");
 

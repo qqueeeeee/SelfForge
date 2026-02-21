@@ -1,4 +1,3 @@
-# routers/auth.py
 from pydantic import BaseModel
 from datetime import timedelta
 from sqlalchemy.orm import Session
@@ -45,9 +44,12 @@ def login(
         )
     
     access_token_expires = timedelta(minutes=60)
-    access_token = AuthService.create_access_token(
-        data={"sub": user.email},
-        expires_delta=access_token_expires
-    )
+    try:
+        access_token = AuthService.create_access_token(
+            data={"sub": user.email},
+            expires_delta=access_token_expires
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     
     return {"access_token": access_token, "token_type": "bearer"}

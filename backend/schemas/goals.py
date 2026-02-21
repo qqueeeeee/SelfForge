@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
+from .common import TimestampMixin
 
 class GoalMilestoneBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)

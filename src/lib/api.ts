@@ -1,7 +1,5 @@
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Types
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -17,10 +15,8 @@ export interface CalendarItemRequest {
   category: "deep-work" | "work" | "personal" | "meeting" | "custom";
   is_all_day?: boolean;
   item_type: "task" | "event";
-  // Task-specific fields
   priority?: "low" | "medium" | "high";
   estimated_duration?: number;
-  // Event-specific fields
   location?: string;
   attendees?: string[];
 }
@@ -29,11 +25,9 @@ export interface CalendarItemResponse extends CalendarItemRequest {
   id: string;
   created_at: string;
   updated_at: string;
-  // Task-specific fields
   completed?: boolean;
   completed_at?: string;
   actual_duration?: number;
-  // Event-specific fields
 }
 
 export interface GoalRequest {
@@ -147,7 +141,6 @@ export interface AskResponse {
   timestamp: string;
 }
 
-// Core API functions
 async function makeRequest<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -156,9 +149,11 @@ async function makeRequest<T>(
     await ensureBackendReady();
 
     const url = `${API_BASE_URL}${endpoint}`;
+    const token = localStorage.getItem("token");
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,
@@ -207,7 +202,6 @@ export async function apiDelete(endpoint: string): Promise<ApiResponse<any>> {
   return makeRequest(endpoint, { method: "DELETE" });
 }
 
-// Backend health check
 let backendReadyPromise: Promise<void> | null = null;
 
 async function waitForBackendOnce(timeoutMs = 10000): Promise<void> {
@@ -218,7 +212,6 @@ async function waitForBackendOnce(timeoutMs = 10000): Promise<void> {
       const response = await fetch(`${API_BASE_URL}/health`);
       if (response.ok) return;
     } catch {
-      // Backend not ready yet
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -233,9 +226,7 @@ function ensureBackendReady(): Promise<void> {
   return backendReadyPromise;
 }
 
-// Calendar API
 export const calendarApi = {
-  // Get calendar items with optional filtering
   async getItems(params?: {
     start_date?: string;
     end_date?: string;
@@ -257,19 +248,16 @@ export const calendarApi = {
     );
   },
 
-  // Get specific calendar item
   async getItem(id: string): Promise<ApiResponse<CalendarItemResponse>> {
     return apiGet<CalendarItemResponse>(`/calendar/items/${id}`);
   },
 
-  // Create new calendar item
   async createItem(
     item: CalendarItemRequest,
   ): Promise<ApiResponse<CalendarItemResponse>> {
     return apiPost<CalendarItemResponse>("/calendar/items", item);
   },
 
-  // Update calendar item
   async updateItem(
     id: string,
     updates: Partial<CalendarItemRequest>,
@@ -277,12 +265,10 @@ export const calendarApi = {
     return apiPut<CalendarItemResponse>(`/calendar/items/${id}`, updates);
   },
 
-  // Delete calendar item
   async deleteItem(id: string): Promise<ApiResponse<any>> {
     return apiDelete(`/calendar/items/${id}`);
   },
 
-  // Create multiple items in batch
   async createBatch(
     items: CalendarItemRequest[],
   ): Promise<ApiResponse<{ created: CalendarItemResponse[]; errors: any[] }>> {
@@ -290,9 +276,7 @@ export const calendarApi = {
   },
 };
 
-// Goals API
 export const goalsApi = {
-  // Get all goals
   async getGoals(params?: {
     status?: string;
     category?: string;
@@ -311,17 +295,14 @@ export const goalsApi = {
     );
   },
 
-  // Get specific goal
   async getGoal(id: string): Promise<ApiResponse<GoalResponse>> {
     return apiGet<GoalResponse>(`/goals/${id}`);
   },
 
-  // Create new goal
   async createGoal(goal: GoalRequest): Promise<ApiResponse<GoalResponse>> {
     return apiPost<GoalResponse>("/goals", goal);
   },
 
-  // Update goal
   async updateGoal(
     id: string,
     updates: Partial<GoalRequest>,
@@ -329,7 +310,6 @@ export const goalsApi = {
     return apiPut<GoalResponse>(`/goals/${id}`, updates);
   },
 
-  // Update milestone
   async updateMilestone(
     goalId: string,
     milestoneId: string,
@@ -339,9 +319,7 @@ export const goalsApi = {
   },
 };
 
-// Timer API
 export const timerApi = {
-  // Get timer sessions
   async getSessions(params?: {
     start_date?: string;
     end_date?: string;
@@ -361,14 +339,12 @@ export const timerApi = {
     );
   },
 
-  // Create timer session
   async createSession(
     session: TimerSessionRequest,
   ): Promise<ApiResponse<TimerSessionResponse>> {
     return apiPost<TimerSessionResponse>("/timer/sessions", session);
   },
 
-  // Update timer session
   async updateSession(
     id: string,
     updates: Partial<
@@ -383,9 +359,7 @@ export const timerApi = {
   },
 };
 
-// Daily Logs API
 export const dailyLogsApi = {
-  // Get daily logs
   async getLogs(params?: {
     start_date?: string;
     end_date?: string;
@@ -404,14 +378,12 @@ export const dailyLogsApi = {
     );
   },
 
-  // Create daily log
   async createLog(
     log: DailyLogRequest,
   ): Promise<ApiResponse<DailyLogResponse>> {
     return apiPost<DailyLogResponse>("/logs/daily", log);
   },
 
-  // Update daily log
   async updateLog(
     id: number,
     updates: Partial<DailyLogRequest>,
@@ -420,14 +392,11 @@ export const dailyLogsApi = {
   },
 };
 
-// User Preferences API
 export const preferencesApi = {
-  // Get user preferences
   async getPreferences(): Promise<ApiResponse<UserPreferencesResponse>> {
     return apiGet<UserPreferencesResponse>("/preferences");
   },
 
-  // Update user preferences
   async updatePreferences(
     updates: Partial<UserPreferencesResponse>,
   ): Promise<ApiResponse<UserPreferencesResponse>> {
@@ -435,9 +404,7 @@ export const preferencesApi = {
   },
 };
 
-// Analytics API
 export const analyticsApi = {
-  // Get productivity statistics
   async getProductivityStats(params?: {
     start_date?: string;
     end_date?: string;
@@ -457,22 +424,17 @@ export const analyticsApi = {
   },
 };
 
-// AI Chat API
 export const aiApi = {
-  // Ask AI assistant
   async ask(request: AskRequest): Promise<ApiResponse<AskResponse>> {
     return apiPost<AskResponse>("/ask", request);
   },
 };
 
-// Legacy API (for backward compatibility)
 export const legacyApi = {
-  // Get legacy habit logs
   async getLogs(days = 30): Promise<ApiResponse<any[]>> {
     return apiGet<any[]>(`/logs?days=${days}`);
   },
 
-  // Create legacy habit log
   async createLog(log: {
     habit: string;
     value: any;
@@ -482,7 +444,6 @@ export const legacyApi = {
   },
 };
 
-// Health check
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     const response = await apiGet<{ status: string; version?: string }>(
@@ -494,7 +455,6 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
-// Utility functions for data transformation
 export function transformCalendarItemToFrontend(
   item: CalendarItemResponse,
 ): any {
@@ -575,7 +535,6 @@ export function transformGoalFromFrontend(goal: any): GoalRequest {
   };
 }
 
-// Export default api object for backward compatibility
 export default {
   get: apiGet,
   post: apiPost,

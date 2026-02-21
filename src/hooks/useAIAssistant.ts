@@ -43,12 +43,34 @@ export interface UseAIAssistantReturn {
   clearConversations: () => void;
 }
 
-const STORAGE_KEY = "selfforge-ai-conversations";
+const STORAGE_KEY_BASE = "selfforge-ai-conversations";
+
+function getCurrentUserStorageKey(): string {
+  const token = localStorage.getItem("token");
+  if (!token) return "anonymous";
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return "anonymous";
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded));
+    const subject = decoded?.sub ? String(decoded.sub) : "anonymous";
+    return subject.replace(/[^a-zA-Z0-9._-]/g, "_");
+  } catch {
+    return "anonymous";
+  }
+}
+
+function getConversationStorageKey(): string {
+  return `selfforge:${getCurrentUserStorageKey()}:${STORAGE_KEY_BASE}`;
+}
 
 export function useAIAssistant(): UseAIAssistantReturn {
   const [conversations, setConversations] = useState<AIConversation[]>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(getConversationStorageKey());
       if (stored) {
         const parsed = JSON.parse(stored);
         return parsed.map((conv: any) => ({
@@ -77,7 +99,7 @@ export function useAIAssistant(): UseAIAssistantReturn {
   // Save conversations to localStorage
   const saveConversations = useCallback((convs: AIConversation[]) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(convs));
+      localStorage.setItem(getConversationStorageKey(), JSON.stringify(convs));
     } catch (error) {
       console.error("Failed to save conversations:", error);
     }
@@ -318,7 +340,7 @@ export function useAIAssistant(): UseAIAssistantReturn {
   const clearConversations = useCallback(() => {
     setConversations([]);
     setCurrentConversation(null);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getConversationStorageKey());
   }, []);
 
   return {

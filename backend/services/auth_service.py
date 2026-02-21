@@ -5,12 +5,20 @@ from jose import jwt
 from sqlalchemy.orm import Session
 from models import User
 import os
-import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = os.getenv("SECRET_JWT_KEY")
 ALGORITHM = "HS256"
+
+
+def _get_secret_key() -> str:
+    secret_key = os.getenv("SECRET_JWT_KEY")
+    if not secret_key:
+        raise RuntimeError("Missing SECRET_JWT_KEY environment variable.")
+    return secret_key
 
 class AuthService:
     @staticmethod
@@ -29,7 +37,7 @@ class AuthService:
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) #type:ignore
+        encoded_jwt = jwt.encode(to_encode, _get_secret_key(), algorithm=ALGORITHM)
         return encoded_jwt
     
     @staticmethod
@@ -40,7 +48,6 @@ class AuthService:
     def create_user(db: Session, email: str, password: str):
         hashed_password = AuthService.get_password_hash(password)
         db_user = User(
-            id=str(uuid.uuid4()),
             email=email,
             hashed_password=hashed_password
         )

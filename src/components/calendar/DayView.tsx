@@ -18,6 +18,8 @@ export function DayView({
   onDateClick,
   onItemCreate,
 }: CalendarViewProps) {
+  const TIME_COLUMN_WIDTH = 80;
+  const HOUR_ROW_HEIGHT = 80;
   const hourSlots = generateHourSlots();
   const dayItems = sortItemsByStartTime(getItemsForDate(items, currentDate));
   const allDayItems = dayItems.filter((item) => item.isAllDay);
@@ -27,16 +29,15 @@ export function DayView({
     onItemCreate(currentDate, hour);
   };
 
-  // Calculate item positioning for time-based layout
   const getItemStyle = (item: any) => {
     const startHour = item.startDateTime.getHours();
     const startMinute = item.startDateTime.getMinutes();
     const endHour = item.endDateTime.getHours();
     const endMinute = item.endDateTime.getMinutes();
 
-    const startPosition = (startHour + startMinute / 60) * 80; // 80px per hour
+    const startPosition = (startHour + startMinute / 60) * HOUR_ROW_HEIGHT;
     const duration = endHour + endMinute / 60 - (startHour + startMinute / 60);
-    const height = Math.max(duration * 80, 40); // Minimum 40px height
+    const height = Math.max(duration * HOUR_ROW_HEIGHT, 34);
 
     return {
       top: `${startPosition}px`,
@@ -45,7 +46,6 @@ export function DayView({
     };
   };
 
-  // Group overlapping items for better positioning
   const getItemColumns = (items: any[]) => {
     const columns: any[][] = [];
 
@@ -82,7 +82,6 @@ export function DayView({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Day header */}
       <div className="border-b border-border bg-background sticky top-0 z-10">
         <div className="p-4 text-center">
           <h2 className="text-xl font-semibold">{formatDate(currentDate)}</h2>
@@ -91,7 +90,6 @@ export function DayView({
           )}
         </div>
 
-        {/* All-day items */}
         {allDayItems.length > 0 && (
           <div className="border-b border-border pb-3 mb-4">
             <h3 className="text-sm font-medium text-muted-foreground mb-2">
@@ -111,14 +109,14 @@ export function DayView({
         )}
       </div>
 
-      {/* Time slots and events */}
       <div className="flex-1 overflow-y-auto">
         <div className="relative">
-          {/* Hour grid */}
           {hourSlots.map((hour) => (
             <div key={hour} className="flex border-b border-border/50">
-              {/* Time label */}
-              <div className="w-20 p-3 text-xs text-muted-foreground text-right border-r border-border bg-muted/30 h-[80px] flex items-start justify-end">
+              <div
+                className="p-3 text-xs text-muted-foreground text-right border-r border-border bg-muted/30 h-[80px] flex items-start justify-end"
+                style={{ width: `${TIME_COLUMN_WIDTH}px` }}
+              >
                 <div className="mt-1">
                   {hour === 0
                     ? "12 AM"
@@ -130,7 +128,6 @@ export function DayView({
                 </div>
               </div>
 
-              {/* Time slot */}
               <div
                 onClick={() => handleTimeSlotClick(hour)}
                 className={cn(
@@ -138,14 +135,15 @@ export function DayView({
                   isToday(currentDate) && "bg-primary/5",
                 )}
               >
-                {/* 30-minute divider */}
                 <div className="absolute top-1/2 left-0 right-0 h-px bg-border/30" />
               </div>
             </div>
           ))}
 
-          {/* Timed items overlay */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute top-0 bottom-0 right-0 pointer-events-none"
+            style={{ left: `${TIME_COLUMN_WIDTH}px` }}
+          >
             {itemColumns.map((column, columnIndex) => (
               <div
                 key={columnIndex}
@@ -167,9 +165,9 @@ export function DayView({
                       <ItemCard
                         item={item}
                         onClick={onItemClick}
-                        compact={false}
+                        compact
                         showTime={true}
-                        className="h-full"
+                        className="h-full overflow-hidden shadow-sm"
                       />
                     </div>
                   );
@@ -178,7 +176,6 @@ export function DayView({
             ))}
           </div>
 
-          {/* Current time indicator */}
           {isToday(currentDate) && <CurrentTimeIndicator />}
         </div>
       </div>
@@ -186,19 +183,20 @@ export function DayView({
   );
 }
 
-// Current time indicator component
 function CurrentTimeIndicator() {
+  const TIME_COLUMN_WIDTH = 80;
+  const HOUR_ROW_HEIGHT = 80;
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
-  const topPosition = (currentHour + currentMinute / 60) * 80; // 80px per hour
+  const topPosition = (currentHour + currentMinute / 60) * HOUR_ROW_HEIGHT;
 
   return (
     <div
       className="absolute pointer-events-none z-30"
       style={{
         top: `${topPosition}px`,
-        left: "80px",
+        left: `${TIME_COLUMN_WIDTH}px`,
         right: "0",
       }}
     >
@@ -213,7 +211,6 @@ function CurrentTimeIndicator() {
   );
 }
 
-// Simple day view for mobile or compact spaces
 export function DayViewSimple({
   currentDate,
   items,
@@ -227,7 +224,6 @@ export function DayViewSimple({
 
   return (
     <div className="space-y-4">
-      {/* Day header */}
       <div className="text-center p-4 border-b border-border">
         <h2 className="text-lg font-semibold">
           {currentDate.toLocaleDateString("en-US", {
@@ -242,7 +238,6 @@ export function DayViewSimple({
         )}
       </div>
 
-      {/* Events list */}
       <div className="px-4">
         {dayItems.length === 0 ? (
           <div className="text-center py-8">
@@ -250,7 +245,7 @@ export function DayViewSimple({
               No events scheduled
             </div>
             <button
-              onClick={() => onEventCreate(currentDate)}
+              onClick={() => onItemCreate(currentDate)}
               className="text-primary hover:underline text-sm"
             >
               Create your first event
@@ -258,7 +253,6 @@ export function DayViewSimple({
           </div>
         ) : (
           <div className="space-y-3">
-            {/* All-day events */}
             {allDayItems.length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">
@@ -277,7 +271,6 @@ export function DayViewSimple({
               </div>
             )}
 
-            {/* Timed events */}
             {timedItems.length > 0 && (
               <div>
                 {allDayItems.length > 0 && (

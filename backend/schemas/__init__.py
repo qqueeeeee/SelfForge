@@ -1,10 +1,6 @@
-from datetime import datetime
 from typing import List, Optional, Union
 from pydantic import BaseModel, Field
-
-class TimestampMixin(BaseModel):
-    created_at: datetime
-    updated_at: datetime
+from .common import TimestampMixin
 
 class UserPreferencesBase(BaseModel):
     default_calendar_view: str = Field("month", pattern="^(month|week|day)$")

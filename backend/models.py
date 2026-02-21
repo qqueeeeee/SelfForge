@@ -1,4 +1,4 @@
-from database import Base, engine 
+from database import Base, engine
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -10,8 +10,9 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.orm import relationship
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "users"
@@ -24,16 +25,17 @@ class HabitLog(Base):
     __tablename__ = "habit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     habit = Column(String, nullable=False)
     value = Column(JSON, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class CalendarItem(Base):
     __tablename__ = "calendar_items"
 
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text)
     start_datetime = Column(DateTime, nullable=False)
@@ -43,8 +45,8 @@ class CalendarItem(Base):
     )  
     is_all_day = Column(Boolean, default=False)
     item_type = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.utcnow)
 
     completed = Column(Boolean, default=False)
     completed_at = Column(DateTime)
@@ -60,7 +62,7 @@ class Goal(Base):
      __tablename__ = "goals"
  
      id = Column(String, primary_key=True, index=True)
-     user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
      title = Column(String, nullable=False)
      description = Column(Text)
      category = Column(
@@ -72,34 +74,34 @@ class Goal(Base):
      ) 
      target_date = Column(DateTime, nullable=False)
      progress = Column(Integer, default=0)
-     created_at = Column(DateTime, default=datetime.utcnow)
-     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.utcnow)
  
-#     milestones = relationship(
-#         "GoalMilestone", back_populates="goal", cascade="all, delete-orphan"
-#     )
-# 
+     milestones = relationship(
+         "GoalMilestone", back_populates="goal", cascade="all, delete-orphan"
+     )
+
  
 class GoalMilestone(Base):
      __tablename__ = "goal_milestones"
  
      id = Column(String, primary_key=True, index=True)
-     user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
      goal_id = Column(String, ForeignKey("goals.id"), nullable=False)
      title = Column(String, nullable=False)
      completed = Column(Boolean, default=False)
      completed_at = Column(DateTime)
-     created_at = Column(DateTime, default=datetime.utcnow)
-     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.utcnow)
  
-#     goal = relationship("Goal", back_populates="milestones")
-# 
-# 
+     goal = relationship("Goal", back_populates="milestones")
+
+
 class TimerSession(Base):
      __tablename__ = "timer_sessions"
  
      id = Column(String, primary_key=True, index=True) 
-     user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
      title = Column(String, nullable=False)
      category = Column(String, nullable=False)  
      start_time = Column(DateTime, nullable=False)
@@ -111,7 +113,7 @@ class TimerSession(Base):
      calendar_item_id = Column(
          String, ForeignKey("calendar_items.id")
      ) 
-     created_at = Column(DateTime, default=datetime.utcnow)
+     created_at = Column(DateTime, default=datetime.now(timezone.utc))
  
 #     calendar_item = relationship("CalendarItem")
  
@@ -120,7 +122,7 @@ class DailyLog(Base):
     __tablename__ = "daily_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     log_date = Column(DateTime, nullable=False)
 
     sleep_hours = Column(Float)
@@ -135,15 +137,15 @@ class DailyLog(Base):
     focus_time_minutes = Column(Integer, default=0)
     deep_work_minutes = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
 
 class UserPreferences(Base):
     __tablename__ = "user_preferences"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     default_calendar_view = Column(String, default="month")
     work_start_hour = Column(Integer, default=9)
@@ -159,8 +161,8 @@ class UserPreferences(Base):
     task_reminders = Column(Boolean, default=True)
     goal_deadline_alerts = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.utcnow)
 
 
-User.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
