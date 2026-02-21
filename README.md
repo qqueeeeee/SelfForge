@@ -1,82 +1,132 @@
-# SelfForge — Personal Productivity & Focus System
+# SelfForge
 
-SelfForge is a full-stack productivity platform for task management, calendar planning, habit tracking, and AI-powered insights.
+A full-stack AI-powered productivity platform. Plan your day, track your habits, and get personalised insights from an AI assistant that actually knows your data.
 
-Built to help users plan, execute, and analyze their daily work with minimal friction.
+Built end-to-end — FastAPI backend, React TypeScript frontend, RAG-powered AI, deployed on AWS.
 
----
-
-## 🚀 Features
-
-- 📅 Custom calendar (day/week/month views)
-- ✅ Task & event management
-- 🔥 Productivity streak tracking
-- 📊 Analytics dashboard (focus time, habits, trends)
-- ⏱ Pomodoro & deep-work timer
-- 🤖 AI assistant for productivity insights
-- ☁️ Cloud deployment (AWS)
+**[Live Demo](http://selfforge.s3-website.eu-north-1.amazonaws.com/)**
 
 ---
 
-## 🛠 Tech Stack
+## What it does
 
-### Frontend
-- React + TypeScript (Vite)
-- Tailwind CSS
-- shadcn/ui
-- React Router
+SelfForge is a personal productivity system that combines task management, calendar planning, and habit tracking with an AI assistant that has context on your actual activity. Instead of a generic chatbot, the AI reads your goals, calendar, and habits through a RAG pipeline and gives you answers that are specific to you.
 
-### Backend
-- FastAPI (Python)
-- SQLAlchemy + PostgreSQL/SQLite
-- Uvicorn
-- LangChain + LLM (RAG pipeline)
-
-### Demo Infrastructure
-- AWS EC2 (Backend)
-- AWS S3 (Frontend Hosting)
+- Calendar with day, week, and month views
+- Task and event management with completion tracking
+- Habit tracking with streak monitoring
+- Analytics dashboard showing focus time, completion rates, and category trends
+- Pomodoro and deep-work timer
+- AI assistant powered by LangChain + FAISS + Groq that answers questions using your own productivity data
+- Secure multi-user system with JWT auth and bcrypt password hashing
 
 ---
 
-## 📦 Architecture
+## Tech Stack
 
-Frontend (S3 + Vite)
-↓
-REST API (FastAPI)
-↓
-Database (SQLAlchemy)
-↓
-AI Layer (RAG + LLM)
+**Frontend** — React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+
+**Backend** — FastAPI, SQLAlchemy, PostgreSQL, Uvicorn
+
+**AI Layer** — LangChain, FAISS vector store, Groq LLM (RAG pipeline)
+
+**Infrastructure** — AWS EC2 (backend), AWS S3 (frontend)
 
 ---
 
-## ⚙️ Setup (Local)
+## Architecture
+
+```
+React Frontend (S3)
+      ↓
+FastAPI REST API (EC2)
+      ↓
+SQLAlchemy + PostgreSQL
+      ↓
+RAG Pipeline (LangChain + FAISS + Groq)
+```
+
+User data gets embedded into a FAISS vector store. When you ask the AI assistant a question, it does semantic search over your own data before generating a response — so the context is always personalised.
+
+---
+
+## Running locally
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- PostgreSQL (or SQLite for local dev)
+- A [Groq API key](https://console.groq.com)
 
 ### Backend
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# create a .env file
+cp .env.example .env           # then fill in your keys
+
 uvicorn main:app --reload
 ```
 
+Backend runs at `http://localhost:8000`
+
 ### Frontend
 
-```
+```bash
 npm install
 npm run dev
 ```
 
-[Live Demo](http://selfforge.s3-website.eu-north-1.amazonaws.com/)
+Frontend runs at `http://localhost:8080`
 
-### Key Learnings
+### Environment variables
 
-Full-stack system design
-REST API architecture
-AI integration (RAG + LLM)
-Cloud deployment (AWS)
-Production debugging
-CORS, security, scaling
+```env
+DATABASE_URL=postgresql://user:password@localhost/selfforge
+SECRET_KEY=your_jwt_secret
+GROQ_API_KEY=your_groq_api_key
+```
 
+---
+
+## Project structure
+
+```
+SelfForge/
+├── backend/
+│   ├── app.py                 # FastAPI app entry point
+│   ├── core/                  # Auth deps, migrations, core config
+│   ├── routers/               # Route handlers (auth, calendar, goals, etc.)
+│   ├── schemas/               # Pydantic request/response schemas
+│   ├── services/              # Auth + AI service layer
+│   ├── utils/                 # Productivity data helpers
+│   ├── tests/                 # API/integration tests
+│   ├── models.py              # SQLAlchemy models
+│   ├── database.py            # DB engine/session setup
+│   └── requirements.txt
+├── src/
+│   ├── components/            # UI + feature components
+│   │   ├── calendar/          # Calendar views and item modals
+│   │   ├── dashboard/         # Dashboard widgets
+│   │   ├── layout/            # App layout shell
+│   │   └── ui/                # shadcn/ui primitives
+│   ├── pages/                 # Route-level pages
+│   ├── hooks/                 # Custom hooks/state logic
+│   ├── contexts/              # Theme/auth context providers
+│   ├── lib/                   # API client and shared utilities
+│   └── integrations/          # External integration clients
+├── faiss_index/          # Persisted vector store
+├── public/
+└── README.md
+```
+
+---
+
+## Built by
+
+Sasank Kodamarthy — [GitHub](https://github.com/qqueeeeee) · [LinkedIn](https://linkedin.com/in/sasank-kodamarthy)
